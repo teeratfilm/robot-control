@@ -218,9 +218,11 @@
     </div>
 
     <script>
-        // --- Configuration ---
+        // --- Configuration (ตรงกับ ESP32 แล้ว) ---
         const mqtt_server = "broker.hivemq.com";
         const mqtt_port = 8000;
+        
+        // ** Topic นี้ต้องตรงกับใน ESP32 เป๊ะๆ **
         const topic_cmd = "myrobot/command";
         const topic_status = "myrobot/status";
         
@@ -275,8 +277,6 @@
         }
 
         function onMessageArrived(message) {
-            // Parse JSON from ESP32
-            // Expected: {"cargo": true/false, "status": "delivering"/"idle", "room": 1}
             try {
                 const data = JSON.parse(message.payloadString);
                 
