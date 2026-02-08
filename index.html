@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Control Center</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
+    <style>
+        body { font-family: 'Sarabun', sans-serif; text-align: center; background-color: #f0f2f5; padding: 20px; }
+        h1 { color: #333; }
+        .status-box { background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        #status-text { font-weight: bold; color: orange; }
+        
+        .btn-grid { display: grid; grid-template-columns: 1fr; gap: 15px; max-width: 400px; margin: 0 auto; }
+        button {
+            padding: 20px; font-size: 20px; border: none; border-radius: 12px;
+            color: white; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button:active { transform: scale(0.98); }
+        .btn-room1 { background-color: #3b82f6; } /* สีฟ้า */
+        .btn-room2 { background-color: #8b5cf6; } /* สีม่วง */
+        .btn-room3 { background-color: #ec4899; } /* สีชมพู */
+        .btn-return { background-color: #10b981; } /* สีเขียว */
+        
+        @media (min-width: 600px) {
+            .btn-grid { grid-template-columns: 1fr 1fr 1fr; }
+            .btn-return { grid-column: span 3; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🤖 สั่งงานหุ่นยนต์</h1>
+
+    <div class="status-box">
+        สถานะการเชื่อมต่อ: <span id="mqtt-status">กำลังเชื่อมต่อ...</span><br>
+        สถานะหุ่นยนต์: <span id="robot-msg">-</span>
+    </div>
+
+    <div class="btn-grid">
+        <button class="btn-room1" onclick="sendCommand('room1')">Room 1</button>
+        <button class="btn-room2" onclick="sendCommand('room2')">Room 2</button>
+        <button class="btn-room3" onclick="sendCommand('room3')">Room 3</button>
+        <button class="btn-return" onclick="sendCommand('return')">🏠 กลับจุดเริ่มต้น</button>
+    </div>
+
+    <script>
+        // --- ตั้งค่า MQTT ---
+        const mqtt_server = "broker.hivemq.com";
+        const mqtt_port = 8000; // WebSockets Port
+        const topic_cmd = "myrobot/command";
+        const topic_status = "myrobot/status";
+        
+        // สร้าง ID สุ่มไม่ให้ซ้ำ
+        const clientID = "web_client_" + parseInt(Math.random() * 100000);
+        
+        // สร้าง Client
+        client = new Paho.MQTT.Client(mqtt_server, mqtt_port, clientID);
+
+        // กำหนดฟังก์ชันเมื่อเชื่อมต่อหรือมีข้อความเข้า
+        client.onConnectionLost = onConnectionLost;
+        client.onMessageArrived = onMessageArrived;
+
+        // เริ่มเชื่อมต่อ
+        connectMQTT();
+
+        function connectMQTT() {
+            document.getElementById("mqtt-status").innerText = "กำลังเชื่อมต่อ...";
+            client.connect({
+                onSuccess: onConnect,
+                onFailure: onFailure,
+                keepAliveInterval: 30
+            });
+        }
+
+        function onConnect() {
+            console.log("Connected to MQTT");
+            document.getElementById("mqtt-status").innerText = "✅ เชื่อมต่อแล้ว";
+            document.getElementById("mqtt-status").style.color = "green";
+            
+            // Subscribe เพื่อรอฟังสถานะจากหุ่น
+            client.subscribe(topic_status);
+        }
+
+        function onFailure(responseObject) {
+            console.log("Connection failed: " + responseObject.errorMessage);
+            document.getElementById("mqtt-status").innerText = "❌ เชื่อมต่อไม่ได้ (รอสักครู่...)";
+            document.getElementById("mqtt-status").style.color = "red";
+            setTimeout(connectMQTT, 5000); // ลองใหม่ใน 5 วิ
+        }
+
+        function onConnectionLost(responseObject) {
+            if (responseObject.errorCode !== 0) {
+                console.log("Connection Lost: " + responseObject.errorMessage);
+                document.getElementById("mqtt-status").innerText = "⚠️ หลุดการเชื่อมต่อ";
+                setTimeout(connectMQTT, 5000);
+            }
+        }
+
+        function onMessageArrived(message) {
+            console.log("Message Arrived: " + message.payloadString);
+            // แสดงผลสถานะที่หุ่นส่งมา
+            // หุ่นส่ง JSON มา เช่น {"status":"delivering", "room":1}
+            try {
+                let data = JSON.parse(message.payloadString);
+                let text = "";
+                if(data.status == "delivering") text = "กำลังไปส่ง Room " + data.room;
+                else if(data.status == "idle") text = "ว่าง / รอคำสั่ง";
+                else text = message.payloadString;
+                
+                if(data.cargo) text += " (มีของ)";
+                
+                document.getElementById("robot-msg").innerText = text;
+            } catch(e) {
+                document.getElementById("robot-msg").innerText = message.payloadString;
+            }
+        }
+
+        function sendCommand(cmd) {
+            // สร้าง JSON ตามรูปแบบที่โค้ด ESP32 ต้องการ: {"cmd": "room1"}
+            let payload = JSON.stringify({ "cmd": cmd });
+            
+            message = new Paho.MQTT.Message(payload);
+            message.destinationName = topic_cmd;
+            client.send(message);
+            console.log("Sent: " + payload);
+        }
+    </script>
+</body>
+</html>
