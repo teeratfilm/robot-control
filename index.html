@@ -3,164 +3,293 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AGV SYSTEM MONITOR</title>
+    <title>AGV COMMAND CENTER</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --bg-color: #0d1117;
-            --panel-bg: #161b22;
-            --text-main: #c9d1d9;
-            --accent-green: #2ea043;
-            --accent-red: #da3633;
-            --accent-blue: #58a6ff;
-            --border: #30363d;
+            --primary: #00f2ff;
+            --secondary: #ff0055;
+            --bg-dark: #0b0c15;
+            --panel-bg: rgba(20, 25, 40, 0.85);
+            --text-main: #ffffff;
+            --road-color: #2c3e50;
         }
 
         body {
-            margin: 0; padding: 20px;
-            font-family: 'JetBrains Mono', monospace; /* ฟอนต์แบบ Terminal */
-            background-color: var(--bg-color);
+            margin: 0; padding: 0;
+            font-family: 'Rajdhani', sans-serif;
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 242, 255, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(255, 0, 85, 0.1) 0%, transparent 20%);
             color: var(--text-main);
-            height: 100vh;
-            box-sizing: border-box;
-            display: flex; flex-direction: column; gap: 15px;
+            min-height: 100vh;
+            /* overflow: hidden;  <-- เอาออกเพื่อให้เลื่อนลงมาดู Log ได้ */
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
 
-        /* --- Header --- */
-        header {
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 15px;
+        /* --- Animation Section --- */
+        .scene-container {
+            width: 90%; max-width: 600px;
+            height: 120px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 15px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
-        h1 { margin: 0; font-size: 1.5rem; color: var(--accent-blue); }
 
-        /* --- Status Grid --- */
-        .status-grid {
+        .road {
+            position: absolute; bottom: 0; width: 100%; height: 40px;
+            background: var(--road-color);
+            border-top: 2px solid #555;
+        }
+        
+        .road::after {
+            content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 2px;
+            background: repeating-linear-gradient(90deg, #fff, #fff 20px, transparent 20px, transparent 40px);
+            opacity: 0.3;
+        }
+
+        .robot-actor {
+            position: absolute; bottom: 15px; left: 20px;
+            font-size: 3rem; color: var(--primary);
+            transition: all 1s ease-in-out;
+            text-shadow: 0 0 15px var(--primary);
+            z-index: 2;
+        }
+        
+        .cargo-actor {
+            position: absolute; top: -15px; right: -5px;
+            font-size: 1.2rem; color: #ffae00;
+            display: none;
+            animation: bounce 1s infinite;
+        }
+
+        .destination-flag {
+            position: absolute; bottom: 40px; right: 20px;
+            font-size: 2rem; color: var(--secondary);
+            opacity: 0.3; transition: 0.3s;
+        }
+
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+        /* --- Dashboard --- */
+        .dashboard {
             display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+            width: 90%; max-width: 600px; margin-bottom: 20px;
         }
-
-        .card {
+        
+        .status-box {
             background: var(--panel-bg);
-            border: 1px solid var(--border);
-            padding: 15px; border-radius: 6px;
+            padding: 15px; border-radius: 10px;
+            display: flex; align-items: center; gap: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
         }
 
-        .label { font-size: 0.8rem; color: #8b949e; display: block; margin-bottom: 5px; }
-        .value { font-size: 1.2rem; font-weight: bold; }
-        
-        .val-green { color: var(--accent-green); }
-        .val-red { color: var(--accent-red); }
-        .val-blue { color: var(--accent-blue); }
+        .status-box i { font-size: 1.5rem; width: 30px; text-align: center; }
+        .status-info { display: flex; flex-direction: column; }
+        .label { font-size: 0.8rem; opacity: 0.6; text-transform: uppercase; }
+        .value { font-size: 1.1rem; font-weight: bold; font-family: 'Orbitron', sans-serif; }
 
-        /* --- Control Buttons --- */
+        .on { color: #00ff88; text-shadow: 0 0 5px #00ff88; }
+        .off { color: #ff3333; }
+        .busy { color: #ffaa00; }
+
+        /* --- Controls --- */
         .controls {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;
+            width: 90%; max-width: 600px;
         }
+
+        .btn {
+            background: linear-gradient(145deg, #1e2330, #161a25);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white; padding: 20px 0; border-radius: 12px;
+            font-family: 'Orbitron', sans-serif; font-size: 1rem;
+            cursor: pointer; transition: 0.2s;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn i { font-size: 1.8rem; margin-bottom: 5px; }
+
+        .btn-room:hover { border-color: var(--primary); color: var(--primary); box-shadow: 0 0 15px rgba(0,242,255,0.2); }
         
-        button {
-            background: #21262d; border: 1px solid var(--border);
-            color: var(--text-main); padding: 15px 0;
-            font-family: inherit; font-weight: bold; cursor: pointer;
-            border-radius: 6px; transition: 0.2s;
+        .btn-return {
+            grid-column: span 3;
+            background: linear-gradient(90deg, #ff0055, #ff5e00);
+            border: none; margin-top: 10px;
         }
-        button:hover { background: #30363d; border-color: #8b949e; }
-        button:active { background: #161b22; }
+        .btn-return:hover { box-shadow: 0 0 20px var(--secondary); filter: brightness(1.2); }
 
-        .btn-return { background: rgba(218, 54, 51, 0.1); border-color: var(--accent-red); color: var(--accent-red); }
-        .btn-return:hover { background: rgba(218, 54, 51, 0.2); }
+        /* --- Login Overlay --- */
+        #login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 100;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .login-card {
+            background: #1a1a2e; padding: 40px; border-radius: 20px;
+            text-align: center; border: 1px solid var(--primary);
+            box-shadow: 0 0 30px rgba(0,242,255,0.1);
+        }
+        .login-input {
+            display: block; width: 200px; padding: 10px; margin: 15px auto;
+            background: #0f0f1a; border: 1px solid #333; color: white;
+            border-radius: 5px; text-align: center;
+        }
+        .login-btn {
+            background: var(--primary); color: black; border: none;
+            padding: 10px 30px; border-radius: 20px; font-weight: bold; cursor: pointer;
+        }
 
-        /* --- LOG CONSOLE (พระเอกของงานนี้) --- */
-        .log-container {
-            flex-grow: 1; /* ยืดเต็มพื้นที่ที่เหลือ */
+        /* --- [NEW] System Log Box --- */
+        .log-box {
+            width: 90%; max-width: 600px;
+            height: 150px;
             background: #000;
-            border: 1px solid var(--border);
-            border-radius: 6px;
+            border: 1px solid #333;
+            border-radius: 10px;
+            margin-top: 20px;
             padding: 10px;
-            overflow-y: auto; /* เลื่อนขึ้นลงได้ */
-            font-size: 0.9rem;
-            display: flex; flex-direction: column;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: #0f0;
+            overflow-y: scroll;
+            box-sizing: border-box;
+            border-left: 5px solid var(--primary);
         }
-        
-        .log-header {
-            border-bottom: 1px solid #333; margin-bottom: 10px; padding-bottom: 5px;
-            font-weight: bold; color: #8b949e;
-        }
-
-        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #111; padding-bottom: 2px;}
-        .time { color: #8b949e; margin-right: 10px; }
-        .log-info { color: var(--text-main); }
-        .log-warn { color: #d29922; }
-        .log-success { color: var(--accent-green); }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg-color); }
-        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+        .log-line { margin-bottom: 2px; border-bottom: 1px solid #111; }
+        .log-time { color: #888; margin-right: 5px; }
 
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>AGV MONITOR [TEXT MODE]</h1>
-        <div id="net-status" class="val-red">OFFLINE</div>
-    </header>
-
-    <div class="status-grid">
-        <div class="card">
-            <span class="label">CURRENT STATE</span>
-            <span class="value val-blue" id="disp-state">WAITING...</span>
-        </div>
-        <div class="card">
-            <span class="label">TARGET ROOM</span>
-            <span class="value" id="disp-room">-</span>
-        </div>
-        <div class="card">
-            <span class="label">CARGO STATUS</span>
-            <span class="value" id="disp-cargo">UNKNOWN</span>
-        </div>
-        <div class="card">
-            <span class="label">DISTANCE SENSOR</span>
-            <span class="value" id="disp-dist">-- cm</span>
+    <div id="login-overlay">
+        <div class="login-card">
+            <h2 style="font-family: 'Orbitron'; color: var(--primary); margin-bottom: 20px;">SYSTEM ACCESS</h2>
+            <input type="text" id="user" class="login-input" placeholder="Username">
+            <input type="password" id="pass" class="login-input" placeholder="Password">
+            <button class="login-btn" onclick="login()">LOGIN</button>
+            <p id="login-msg" style="color:red; font-size:0.8rem; margin-top:10px;"></p>
         </div>
     </div>
 
-    <div class="controls">
-        <button onclick="sendCmd('room1')">[ ROOM 1 ]</button>
-        <button onclick="sendCmd('room2')">[ ROOM 2 ]</button>
-        <button onclick="sendCmd('room3')">[ ROOM 3 ]</button>
-        <button class="btn-return" onclick="sendCmd('return')">[ < RETURN ]</button>
-    </div>
+    <div id="app" style="display:none; width:100%; display:flex; flex-direction:column; align-items:center;">
+        
+        <header style="width:90%; max-width:600px; display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; margin-top: 20px;">
+            <div style="font-family:'Orbitron'; font-size:1.5rem; color:white;">DELIVERY<span style="color:var(--primary)">BOT</span></div>
+            <button onclick="logout()" style="background:none; border:1px solid #555; color:#aaa; padding:5px 10px; border-radius:5px; cursor:pointer;">LOGOUT</button>
+        </header>
 
-    <div class="log-container" id="log-box">
-        <div class="log-header">> SYSTEM LOG OUTPUT...</div>
+        <div class="scene-container">
+            <div class="destination-flag" id="dest-flag"><i class="fas fa-map-marker-alt"></i></div>
+            <div class="robot-actor" id="robot-actor">
+                <i class="fas fa-robot"></i>
+                <i class="fas fa-box cargo-actor" id="cargo-actor"></i>
+            </div>
+            <div class="road"></div>
         </div>
+
+        <div class="dashboard">
+            <div class="status-box">
+                <i class="fas fa-wifi busy" id="icon-net"></i>
+                <div class="status-info">
+                    <span class="label">NETWORK</span>
+                    <span class="value busy" id="txt-net">Connecting...</span>
+                </div>
+            </div>
+            <div class="status-box">
+                <i class="fas fa-box-open" id="icon-cargo" style="color:#aaa;"></i>
+                <div class="status-info">
+                    <span class="label">CARGO BAY</span>
+                    <span class="value" id="txt-cargo" style="color:#aaa;">EMPTY</span>
+                </div>
+            </div>
+            <div class="status-box" style="grid-column: span 2;">
+                <i class="fas fa-tachometer-alt" style="color:var(--primary);"></i>
+                <div class="status-info">
+                    <span class="label">CURRENT STATUS</span>
+                    <span class="value" id="txt-status">IDLE / READY</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-room" onclick="sendCommand('room1')">
+                <i class="fas fa-clinic-medical"></i> ROOM 1
+            </button>
+            <button class="btn btn-room" onclick="sendCommand('room2')">
+                <i class="fas fa-flask"></i> ROOM 2
+            </button>
+            <button class="btn btn-room" onclick="sendCommand('room3')">
+                <i class="fas fa-procedures"></i> ROOM 3
+            </button>
+            <button class="btn btn-return" onclick="sendCommand('return')">
+                <i class="fas fa-home"></i> RETURN TO BASE
+            </button>
+        </div>
+
+        <div class="log-box" id="system-log">
+            <div class="log-line">--- SYSTEM INITIALIZED ---</div>
+        </div>
+
+    </div>
 
     <script>
-        // --- Configuration ---
+        // --- 1. Login Logic ---
+        const USER = "admin";
+        const PASS = "1234";
+
+        if(localStorage.getItem("logged") === "true") showApp();
+
+        function login() {
+            if(document.getElementById("user").value === USER && document.getElementById("pass").value === PASS) {
+                localStorage.setItem("logged", "true");
+                showApp();
+            } else {
+                document.getElementById("login-msg").innerText = "INVALID CREDENTIALS";
+            }
+        }
+
+        function logout() {
+            if (client && client.isConnected()) client.disconnect();
+            localStorage.removeItem("logged");
+            location.reload();
+        }
+
+        function showApp() {
+            document.getElementById("login-overlay").style.display = "none";
+            document.getElementById("app").style.display = "flex";
+            connectMQTT();
+        }
+
+        // --- 2. MQTT Logic ---
         const MQTT_HOST = "broker.hivemq.com";
         const MQTT_PORT = 8884;
         const TOPIC_CMD = "myrobot/command";
         const TOPIC_STATUS = "myrobot/status";
-        const CLIENT_ID = "monitor_" + new Date().getTime();
+        const CLIENT_ID = "web_" + new Date().getTime();
 
         client = new Paho.MQTT.Client(MQTT_HOST, MQTT_PORT, CLIENT_ID);
         client.onConnectionLost = onConnectionLost;
         client.onMessageArrived = onMessageArrived;
 
-        // Auto Connect
-        connect();
+        window.onbeforeunload = function() { if(client.isConnected()) client.disconnect(); };
 
-        function connect() {
-            addLog("Attempting to connect to Server...", "info");
-            document.getElementById("net-status").innerText = "CONNECTING...";
-            document.getElementById("net-status").className = "log-warn";
-            
+        function connectMQTT() {
+            document.getElementById("txt-net").innerText = "Connecting...";
+            addLog("Connecting to HiveMQ...");
             client.connect({
                 onSuccess: onConnect,
-                onFailure: onFail,
+                onFailure: onFailure,
                 useSSL: true,
                 timeout: 5,
                 keepAliveInterval: 15
@@ -168,96 +297,115 @@
         }
 
         function onConnect() {
-            addLog("CONNECTED to HiveMQ Broker!", "success");
-            document.getElementById("net-status").innerText = "ONLINE (SECURE)";
-            document.getElementById("net-status").className = "val-green";
+            console.log("Connected");
+            updateNetStatus(true);
+            addLog("MQTT Connected! Subscribing...");
             client.subscribe(TOPIC_STATUS);
-            addLog("Subscribed to topic: " + TOPIC_STATUS, "info");
         }
 
-        function onFail(e) {
-            addLog("Connection Failed: " + e.errorMessage, "warn");
-            document.getElementById("net-status").innerText = "ERROR";
-            document.getElementById("net-status").className = "val-red";
-            setTimeout(connect, 3000);
+        function onFailure(e) {
+            console.log("Fail: " + e.errorMessage);
+            updateNetStatus(false);
+            addLog("Connection Failed: " + e.errorMessage);
+            setTimeout(connectMQTT, 3000);
         }
 
         function onConnectionLost(e) {
             if(e.errorCode !== 0) {
-                addLog("Connection Lost: " + e.errorMessage, "warn");
-                document.getElementById("net-status").innerText = "OFFLINE";
-                document.getElementById("net-status").className = "val-red";
-                setTimeout(connect, 3000);
+                console.log("Lost: " + e.errorMessage);
+                updateNetStatus(false);
+                addLog("Connection Lost!");
+                setTimeout(connectMQTT, 3000);
             }
         }
 
-        // --- รับข้อมูลจากหุ่นยนต์ ---
+        function updateNetStatus(isOnline) {
+            const txt = document.getElementById("txt-net");
+            const icon = document.getElementById("icon-net");
+            if(isOnline) {
+                txt.innerText = "ONLINE"; txt.className = "value on";
+                icon.className = "fas fa-wifi on";
+            } else {
+                txt.innerText = "OFFLINE"; txt.className = "value off";
+                icon.className = "fas fa-wifi off";
+            }
+        }
+
         function onMessageArrived(msg) {
             try {
-                const payload = msg.payloadString;
-                const data = JSON.parse(payload);
+                const data = JSON.parse(msg.payloadString);
                 
-                // 1. อัปเดตหน้าจอหลัก (Dashboard)
-                document.getElementById("disp-state").innerText = data.status.toUpperCase();
-                document.getElementById("disp-room").innerText = (data.room === 0) ? "BASE" : "ROOM " + data.room;
-                
-                const dist = data.distance;
-                document.getElementById("disp-dist").innerText = (dist > 500) ? "> 50cm" : dist + " cm";
+                // Add to Log
+                const logMsg = `STAT:${data.status} | DIST:${data.distance}cm | CARGO:${data.cargo}`;
+                // addLog(logMsg); // ถ้าไม่อยากให้รกเกินไป ปิดบรรทัดนี้ได้
 
-                const cargoEl = document.getElementById("disp-cargo");
+                // 1. Update Cargo
+                const cargoTxt = document.getElementById("txt-cargo");
+                const cargoIcon = document.getElementById("icon-cargo");
+                const cargoActor = document.getElementById("cargo-actor");
+                
                 if(data.cargo) {
-                    cargoEl.innerText = "LOADED (HAS OBJECT)";
-                    cargoEl.className = "value val-green";
+                    cargoTxt.innerText = "LOADED"; cargoTxt.style.color = "#00ff88";
+                    cargoIcon.className = "fas fa-box on";
+                    cargoActor.style.display = "block";
                 } else {
-                    cargoEl.innerText = "EMPTY (NO OBJECT)";
-                    cargoEl.className = "value val-red";
+                    cargoTxt.innerText = "EMPTY"; cargoTxt.style.color = "#aaa";
+                    cargoIcon.className = "fas fa-box-open"; cargoIcon.style.color = "#aaa";
+                    cargoActor.style.display = "none";
                 }
 
-                // 2. เขียนลง Log (รายงานละเอียด)
-                // เราจะไม่เขียนทุกครั้งถ้าข้อมูลเดิมซ้ำๆ เพื่อไม่ให้รก
-                // แต่ถ้าอยากเห็นทุกวินาที ให้เอา if ออกได้
-                addLog(`RECV: Stat=${data.status} | Dist=${dist}cm | Cargo=${data.cargo}`, "info");
+                // 2. Update Status & Animation
+                const statusTxt = document.getElementById("txt-status");
+                const robotActor = document.getElementById("robot-actor");
+                const flag = document.getElementById("dest-flag");
 
-            } catch(e) {
-                addLog("JSON Parse Error: " + e.message, "warn");
-            }
+                if(data.status === "delivering") {
+                    statusTxt.innerText = "GOING TO ROOM " + data.room;
+                    statusTxt.style.color = "var(--primary)";
+                    
+                    robotActor.style.left = "80%";
+                    robotActor.style.transform = "scaleX(1)";
+                    flag.style.opacity = "1";
+                    
+                } else if(data.status === "idle") {
+                    statusTxt.innerText = "IDLE / READY";
+                    statusTxt.style.color = "#fff";
+                    
+                    robotActor.style.left = "20px";
+                    robotActor.style.transform = "scaleX(-1)";
+                    flag.style.opacity = "0.3";
+
+                } else {
+                    statusTxt.innerText = data.status.toUpperCase();
+                }
+
+            } catch(e) { console.log("JSON Err", e); }
         }
 
-        // --- ส่งคำสั่ง ---
-        function sendCmd(cmd) {
+        function sendCommand(cmd) {
             if(client.isConnected()) {
-                const message = new Paho.MQTT.Message(JSON.stringify({ "cmd": cmd }));
-                message.destinationName = TOPIC_CMD;
-                client.send(message);
-                addLog(">> COMMAND SENT: " + cmd.toUpperCase(), "success");
+                let msg = new Paho.MQTT.Message(JSON.stringify({ "cmd": cmd }));
+                msg.destinationName = TOPIC_CMD;
+                client.send(msg);
+                
+                document.getElementById("txt-status").innerText = "SENDING COMMAND...";
+                addLog("Sent Command: " + cmd.toUpperCase());
             } else {
-                addLog("Cannot send: Offline", "warn");
-                alert("OFFLINE");
+                alert("OFFLINE! Please wait...");
+                addLog("Failed to send: Offline");
             }
         }
 
-        // --- ระบบ Log ---
-        function addLog(text, type) {
-            const box = document.getElementById("log-box");
+        // --- Log Function ---
+        function addLog(msg) {
+            const box = document.getElementById("system-log");
             const time = new Date().toLocaleTimeString('en-US', { hour12: false });
-            
-            let colorClass = "log-info";
-            if(type === "warn") colorClass = "log-warn";
-            if(type === "success") colorClass = "log-success";
-
-            const html = `
-                <div class="log-entry">
-                    <span class="time">[${time}]</span>
-                    <span class="${colorClass}">${text}</span>
-                </div>
-            `;
-            
-            box.insertAdjacentHTML('beforeend', html);
-            
-            // Auto Scroll ลงล่างสุด
-            box.scrollTop = box.scrollHeight;
+            const line = document.createElement("div");
+            line.className = "log-line";
+            line.innerHTML = `<span class="log-time">[${time}]</span> ${msg}`;
+            box.appendChild(line);
+            box.scrollTop = box.scrollHeight; // Auto scroll to bottom
         }
-
     </script>
 </body>
 </html>
