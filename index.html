@@ -291,9 +291,9 @@
             connectMQTT(); // เริ่มเชื่อมต่อ MQTT เฉพาะตอนล็อกอินผ่านแล้ว
         }
 
-        // --- 2. MQTT Logic (Robot Control) ---
+        // --- 2. MQTT Logic (UPDATED FOR HTTPS) ---
         const mqtt_server = "broker.hivemq.com";
-        const mqtt_port = 8000;
+        const mqtt_port = 8884; // ** ใช้ Port 8884 (Secure WebSocket) **
         const topic_cmd = "myrobot/command";
         const topic_status = "myrobot/status";
         const clientID = "web_ui_" + parseInt(Math.random() * 100000);
@@ -309,7 +309,8 @@
 
         function connectMQTT() {
             elNetwork.innerText = "Connecting...";
-            client.connect({ onSuccess: onConnect, onFailure: onFailure, keepAliveInterval: 30 });
+            // ** สำคัญมาก: useSSL: true เพื่อให้รองรับเว็บ HTTPS **
+            client.connect({ onSuccess: onConnect, onFailure: onFailure, keepAliveInterval: 30, useSSL: true });
         }
 
         function onConnect() {
