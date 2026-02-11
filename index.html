@@ -10,8 +10,8 @@
     
     <style>
         :root {
-            /* Palette: Modern Soft UI */
-            --card-bg: rgba(255, 255, 255, 0.9); /* พื้นหลังขาวโปร่งแสง */
+            /* Palette */
+            --card-bg: rgba(255, 255, 255, 0.92); /* พื้นหลังการ์ดขาวขุ่น */
             --primary: #4f46e5; 
             --secondary: #ec4899; 
             --text-dark: #1f2937;
@@ -26,13 +26,15 @@
             margin: 0; padding: 20px;
             font-family: 'Poppins', sans-serif;
             
-            /* --- ตั้งค่าพื้นหลังรูป bg.jpg --- */
-            background-color: #333;
-            background-image: url('bg.jpg'); /* ใช้รูป bg.jpg */
+            /* --- แก้ไขพื้นหลัง (Fix Background Size) --- */
+            background-color: #333; /* สีพื้นหลังสำรอง */
+            background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('bg.jpg'); /* ใส่เงาดำทับรูปนิดนึงให้อ่านง่าย */
+            
+            /* ใช้ cover เพื่อให้เต็มจอ แต่ลบ fixed ออกแก้ปัญหาซูมในมือถือ */
             background-size: cover; 
-            background-position: center;
+            background-position: center top; /* จัดให้เห็นส่วนบนของรูปเป็นหลัก */
             background-repeat: no-repeat;
-            background-attachment: fixed;
+            /* background-attachment: fixed; <--- ลบตัวนี้ออกแล้ว */
             
             color: var(--text-dark);
             min-height: 100vh;
