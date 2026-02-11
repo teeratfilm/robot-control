@@ -11,24 +11,27 @@
     <style>
         :root {
             /* Palette: Hello Kitty Theme */
-            --card-bg: rgba(255, 255, 255, 0.95); /* พื้นหลังขาวเกือบทึบ */
-            --primary: #ff007f; /* สีชมพูเข้ม */
-            --secondary: #9b5de5; /* สีม่วง */
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --primary: #ff007f; /* ชมพูเข้ม */
+            --secondary: #9b5de5; /* ม่วง */
             --text-dark: #4a4a4a;
             --text-light: #888888;
             --success: #00bbf9; 
             --danger: #ff4757; 
-            --shadow: 0 10px 25px rgba(255, 0, 127, 0.15); /* เงาสีชมพูจางๆ */
-            --road-color: #fce7f3; /* ถนนสีชมพูอ่อน */
+            --shadow: 0 10px 25px rgba(255, 0, 127, 0.15);
+            --road-color: #fce7f3;
         }
 
         body {
             margin: 0; padding: 20px;
             font-family: 'Poppins', sans-serif;
             
-            /* --- พื้นหลัง Hello Kitty --- */
-            background-color: #ffe6f2;
+            /* --- พื้นหลัง --- */
+            background-color: #ffe6f2; /* สีรองพื้นชมพู */
+            
+            /* ลองดึงภาพ bg.jpg */
             background-image: url('bg.jpg'); 
+            
             background-size: cover; 
             background-position: center;
             background-repeat: no-repeat;
@@ -54,7 +57,7 @@
             margin-bottom: 20px;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(5px);
-            padding: 15px 25px; border-radius: 25px; /* มุมโค้งมน */
+            padding: 15px 25px; border-radius: 25px;
             box-shadow: var(--shadow);
             border: 3px solid white;
         }
