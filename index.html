@@ -7,112 +7,414 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    
     <style>
+        /* --- Styles เดิมทั้งหมด (ห้ามแก้) --- */
         :root {
             --card-bg: rgba(255, 255, 255, 0.95);
-            --primary: #ff007f; --secondary: #9b5de5; 
-            --text-dark: #4a4a4a; --text-light: #888888;
-            --success: #00bbf9; --danger: #ff4757; 
+            --primary: #ff007f; 
+            --secondary: #9b5de5; 
+            --text-dark: #4a4a4a;
+            --text-light: #888888;
+            --success: #00bbf9; 
+            --danger: #ff4757; 
             --shadow: 0 10px 25px rgba(255, 0, 127, 0.15);
             --road-color: #fce7f3;
         }
+
         body {
-            margin: 0; padding: 20px; font-family: 'Poppins', sans-serif;
-            background-color: #ffe6f2; background-image: url('bg.jpg'); 
-            background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed;
-            color: var(--text-dark); min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+            margin: 0; padding: 20px;
+            font-family: 'Poppins', sans-serif;
+            background-color: #ffe6f2; 
+            background-image: url('bg.jpg'); 
+            background-size: cover; 
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center;
         }
+
+        /* Animation แจ้งเตือน (เพิ่มเข้ามาแต่ไม่กระทบดีไซน์หลัก) */
         @keyframes pulse-red { 
             0% { border: 3px solid var(--danger); box-shadow: 0 0 10px var(--danger); } 
             50% { border: 3px solid #fff; box-shadow: 0 0 20px var(--danger); } 
             100% { border: 3px solid var(--danger); box-shadow: 0 0 10px var(--danger); } 
         }
         .alert-mode { animation: pulse-red 1s infinite; background: #fff5f5 !important; }
-        header { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: rgba(255, 255, 255, 0.95); padding: 15px 25px; border-radius: 25px; box-shadow: var(--shadow); border: 3px solid white; }
-        h1 { margin: 0; font-weight: 800; font-size: 1.6rem; color: var(--primary); }
-        .btn-logout { background: #fff; border: 2px solid #ffc2d1; color: var(--secondary); padding: 8px 18px; border-radius: 20px; cursor: pointer; font-weight: 600; }
-        .scene-container { width: 100%; max-width: 600px; height: 140px; background: rgba(255, 255, 255, 0.9); border-radius: 25px; margin-bottom: 20px; position: relative; overflow: hidden; box-shadow: var(--shadow); border: 3px solid white; }
-        .road { position: absolute; bottom: 0; width: 100%; height: 40px; background: var(--road-color); }
-        .robot-actor { position: absolute; bottom: 15px; left: 20px; font-size: 3.5rem; color: var(--secondary); transition: all 1.5s; }
-        .cargo-actor { position: absolute; top: -15px; right: 5px; font-size: 1.3rem; color: var(--primary); display: none; }
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 600px; margin-bottom: 20px; }
-        .card { background: var(--card-bg); padding: 20px; border-radius: 25px; box-shadow: var(--shadow); display: flex; flex-direction: column; align-items: center; border: 3px solid white; transition: 0.3s; }
-        .value { font-size: 1.1rem; font-weight: 800; margin-top: 5px; }
-        .off { color: var(--danger); } .on { color: var(--success); }
-        .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 600px; margin-bottom: 20px; }
-        .btn { background: var(--card-bg); border: 3px solid white; padding: 18px 0; border-radius: 20px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; box-shadow: var(--shadow); }
-        .btn-home { grid-column: span 3; background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); color: white; border: none; }
-        .log-wrapper { width: 100%; max-width: 600px; background: var(--card-bg); border-radius: 25px; box-shadow: var(--shadow); overflow: hidden; border: 3px solid white; }
-        .log-content { height: 120px; padding: 15px; overflow-y: auto; font-size: 0.8rem; }
-        #login-modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255, 240, 245, 0.8); display: flex; align-items: center; justify-content: center; z-index: 999; }
-        .login-box { text-align: center; width: 280px; background: white; padding: 40px; border-radius: 30px; box-shadow: 0 20px 60px rgba(255, 0, 127, 0.2); }
-        .inp { width: 100%; padding: 12px; margin: 10px 0; background: #fff0f6; border: 2px solid #ffe6f2; border-radius: 15px; text-align: center; }
-        .btn-login { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; font-weight: 700; border-radius: 15px; cursor: pointer; }
+
+        header {
+            width: 100%; max-width: 600px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            padding: 15px 25px; border-radius: 25px;
+            box-shadow: var(--shadow);
+            border: 3px solid white;
+        }
+        h1 { margin: 0; font-weight: 800; font-size: 1.6rem; color: var(--primary); letter-spacing: 1px; }
+        
+        .btn-logout { 
+            background: #fff; border: 2px solid #ffc2d1; color: var(--secondary);
+            padding: 8px 18px; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 0.85rem;
+            transition: 0.2s;
+        }
+        .btn-logout:hover { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .scene-container {
+            width: 100%; max-width: 600px; height: 140px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 25px;
+            margin-bottom: 20px; position: relative; overflow: hidden;
+            box-shadow: var(--shadow); border: 3px solid white;
+        }
+        .road {
+            position: absolute; bottom: 0; width: 100%; height: 40px;
+            background: var(--road-color); 
+        }
+        .road::after {
+            content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 4px;
+            background: repeating-linear-gradient(90deg, #fff, #fff 30px, transparent 30px, transparent 60px);
+        }
+        .robot-actor {
+            position: absolute; bottom: 15px; left: 20px;
+            font-size: 3.5rem; color: var(--secondary);
+            transition: all 1.5s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: 2; transform: scaleX(-1);
+            filter: drop-shadow(0 5px 0px rgba(0,0,0,0.1));
+        }
+        .cargo-actor {
+            position: absolute; top: -15px; right: 5px; 
+            font-size: 1.3rem; color: var(--primary); display: none; animation: bounce 1s infinite;
+        }
+        .destination-flag {
+            position: absolute; bottom: 45px; right: 30px; 
+            font-size: 2.2rem; color: var(--primary); opacity: 0.2; transition: 0.3s;
+        }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+        .dashboard {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
+            width: 100%; max-width: 600px; margin-bottom: 20px;
+        }
+        .card {
+            background: var(--card-bg); 
+            backdrop-filter: blur(5px);
+            padding: 20px; border-radius: 25px;
+            box-shadow: var(--shadow);
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+            transition: 0.3s; border: 3px solid white;
+        }
+        .card i { font-size: 1.6rem; margin-bottom: 8px; color: #ffc2d1; }
+        .label { font-size: 0.75rem; color: var(--text-light); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+        .value { font-size: 1.1rem; font-weight: 800; color: var(--text-dark); margin-top: 5px; }
+        
+        .on { color: var(--success); }
+        .off { color: var(--danger); }
+        .wait { color: #f59e0b; }
+        .active-icon { color: var(--primary) !important; }
+
+        .controls {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+            width: 100%; max-width: 600px; margin-bottom: 20px;
+        }
+        .btn {
+            background: var(--card-bg); 
+            border: 3px solid white;
+            padding: 18px 0; border-radius: 20px;
+            font-family: 'Poppins'; font-weight: 600; font-size: 0.9rem; color: var(--text-dark);
+            cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;
+            box-shadow: var(--shadow); transition: 0.2s;
+        }
+        .btn i { font-size: 1.5rem; color: var(--secondary); }
+        .btn:hover { transform: translateY(-5px); background: #fff0f5; }
+        .btn:active { transform: scale(0.95); }
+        
+        .btn-home { 
+            grid-column: span 3; 
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+            color: white; border: none;
+        }
+        .btn-home i { color: white; text-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .btn-home:hover { background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%); }
+
+        .log-wrapper {
+            width: 100%; max-width: 600px;
+            background: var(--card-bg); border-radius: 25px; 
+            box-shadow: var(--shadow); overflow: hidden;
+            border: 3px solid white;
+        }
+        .log-header {
+            padding: 12px 25px; background: #fff0f6; border-bottom: 2px solid #ffe6f2;
+            font-size: 0.85rem; color: var(--primary); font-weight: 700;
+            display: flex; justify-content: space-between;
+        }
+        .log-content {
+            height: 120px; padding: 15px; overflow-y: auto;
+            font-family: 'Poppins', sans-serif; font-size: 0.8rem; color: var(--text-dark);
+        }
+        .log-line { margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px dashed #ffd1e8; }
+        .log-time { color: #ffb3c6; margin-right: 10px; font-weight: 600; }
+        
+        .t-info { color: var(--text-dark); }
+        .t-warn { color: #f59e0b; font-weight: 700; }
+        .t-err { color: var(--danger); font-weight: 800; }
+
+        #login-modal {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(255, 240, 245, 0.8); backdrop-filter: blur(8px); z-index: 999;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .login-box { 
+            text-align: center; width: 280px; background: white; 
+            padding: 40px; border-radius: 30px; 
+            box-shadow: 0 20px 60px rgba(255, 0, 127, 0.2); 
+            border: 4px solid white;
+        }
+        .inp { 
+            width: 100%; padding: 12px; margin: 10px 0; 
+            background: #fff0f6; border: 2px solid #ffe6f2; border-radius: 15px; 
+            text-align: center; box-sizing: border-box; font-family: 'Poppins'; color: var(--primary);
+        }
+        .btn-login { 
+            width: 100%; padding: 12px; background: var(--primary); 
+            color: white; border: none; font-weight: 700; 
+            cursor: pointer; margin-top: 15px; border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(255, 0, 127, 0.3); transition: 0.3s;
+        }
+        .btn-login:hover { transform: scale(1.05); }
+
     </style>
 </head>
 <body>
+
     <div id="login-modal">
         <div class="login-box">
-            <h2 style="color:var(--primary);">Welcome! 💖</h2>
+            <h2 style="color:var(--primary); font-weight:800; margin-bottom:20px;">Welcome! 💖</h2>
             <input type="text" id="user" class="inp" placeholder="Username">
             <input type="password" id="pass" class="inp" placeholder="Password">
             <button class="btn-login" onclick="login()">Login</button>
-            <p id="msg" style="color:var(--danger); font-size:0.8rem;"></p>
+            <p id="msg" style="color:var(--danger); margin-top:10px; font-size:0.8rem;"></p>
         </div>
     </div>
 
     <div id="app" style="display:none; width:100%; flex-direction:column; align-items:center;">
-        <header><h1>Deli<span>Bot</span> 🎀</h1><button class="btn-logout" onclick="logout()">Logout</button></header>
+        
+        <header>
+            <h1>Deli<span>Bot</span> 🎀</h1>
+            <button class="btn-logout" onclick="logout()">Logout</button>
+        </header>
+
         <div class="scene-container">
-            <div class="robot-actor" id="robot-actor"><i class="fas fa-robot"></i><i class="fas fa-gift cargo-actor" id="cargo-actor"></i></div>
+            <div class="destination-flag" id="dest-flag"><i class="fas fa-heart"></i></div>
+            <div class="robot-actor" id="robot-actor">
+                <i class="fas fa-robot"></i>
+                <i class="fas fa-gift cargo-actor" id="cargo-actor"></i>
+            </div>
             <div class="road"></div>
         </div>
+
         <div class="dashboard">
-            <div class="card"><i class="fas fa-wifi"></i><span class="label">Status</span><span class="value off" id="txt-net">Offline</span></div>
-            <div class="card"><i class="fas fa-cube"></i><span class="label">Cargo</span><span class="value" id="txt-cargo">Empty</span></div>
-            <div class="card" id="card-status"><i class="fas fa-smile-wink"></i><span class="label">Action</span><span class="value" id="txt-status">Idle</span></div>
-            <div class="card"><i class="fas fa-ruler-horizontal"></i><span class="label">Distance</span><span class="value" id="txt-dist">-- cm</span></div>
+            <div class="card">
+                <i class="fas fa-wifi" id="icon-net"></i>
+                <span class="label">Status</span>
+                <span class="value off" id="txt-net">Offline</span>
+            </div>
+            <div class="card">
+                <i class="fas fa-cube" id="icon-cargo"></i>
+                <span class="label">Cargo</span>
+                <span class="value" id="txt-cargo">Empty</span>
+            </div>
+            <div class="card" id="card-status">
+                <i class="fas fa-smile-wink" id="icon-bot"></i>
+                <span class="label">Action</span>
+                <span class="value" id="txt-status">Idle</span>
+            </div>
+            <div class="card">
+                <i class="fas fa-ruler-horizontal"></i>
+                <span class="label">Distance</span>
+                <span class="value" id="txt-dist">-- cm</span>
+            </div>
         </div>
+
         <div class="controls">
             <button class="btn" onclick="send('room1')"><i class="fas fa-utensils"></i>Room 1</button>
             <button class="btn" onclick="send('room2')"><i class="fas fa-hamburger"></i>Room 2</button>
             <button class="btn" onclick="send('room3')"><i class="fas fa-pizza-slice"></i>Room 3</button>
-            <button class="btn btn-home" onclick="send('return')"><i class="fas fa-home"></i>Return</button>
+            <button class="btn btn-home" onclick="send('return')"><i class="fas fa-home"></i>Return to Base</button>
         </div>
-        <div class="log-wrapper"><div class="log-content" id="log-box">--- Ready 💖 ---</div></div>
+
+        <div class="log-wrapper">
+            <div class="log-header">
+                <span>System Activity</span>
+                <span style="cursor:pointer; color:var(--primary);" onclick="clearLog()">Clear</span>
+            </div>
+            <div class="log-content" id="log-box">
+                <div class="log-line">--- System Ready 💖 ---</div>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        const MQTT_HOST = "broker.hivemq.com", MQTT_PORT = 8884;
-        const TOPIC_CMD = "myrobot/command", TOPIC_STATUS = "myrobot/status";
+        // --- CONFIGURATION ---
+        const MQTT_HOST = "broker.hivemq.com";
+        const MQTT_PORT = 8884;
+        const TOPIC_CMD = "myrobot/command";
+        const TOPIC_STATUS = "myrobot/status";
+        
+        const USER_SET = "admin";
+        const PASS_SET = "1234";
+
         var client = null;
 
-        function login() { if(document.getElementById("user").value==="admin" && document.getElementById("pass").value==="1234") { localStorage.setItem("isLogged", "true"); showApp(); } else { document.getElementById("msg").innerText = "Wrong Password"; } }
-        function logout() { if(client) client.disconnect(); localStorage.removeItem("isLogged"); location.reload(); }
-        function showApp() { document.getElementById("login-modal").style.display = "none"; document.getElementById("app").style.display = "flex"; initMQTT(); }
         if(localStorage.getItem("isLogged") === "true") showApp();
 
-        function initMQTT() { client = new Paho.MQTT.Client(MQTT_HOST, MQTT_PORT, "web_"+Date.now()); client.onMessageArrived = onMessage; client.connect({ onSuccess: () => { document.getElementById("txt-net").innerText="Online"; document.getElementById("txt-net").className="value on"; client.subscribe(TOPIC_STATUS); }, useSSL: true }); }
-        function send(c) { if(client && client.isConnected()) { client.send(new Paho.MQTT.Message(JSON.stringify({cmd: c}))); } }
+        function login() {
+            let u = document.getElementById("user").value;
+            let p = document.getElementById("pass").value;
+            if(u === USER_SET && p === PASS_SET) {
+                localStorage.setItem("isLogged", "true");
+                showApp();
+            } else {
+                document.getElementById("msg").innerText = "Oops! Wrong Password";
+            }
+        }
+
+        function logout() {
+            if(client) { try { client.disconnect(); } catch(e){} }
+            localStorage.removeItem("isLogged");
+            location.reload();
+        }
+
+        function showApp() {
+            document.getElementById("login-modal").style.display = "none";
+            document.getElementById("app").style.display = "flex";
+            initMQTT(); 
+        }
+
+        function initMQTT() {
+            const clientID = "web_" + new Date().getTime();
+            client = new Paho.MQTT.Client(MQTT_HOST, MQTT_PORT, clientID);
+            client.onConnectionLost = onLost;
+            client.onMessageArrived = onMessage;
+            connect();
+        }
+
+        function connect() {
+            updateStatusText("Connecting...", "wait");
+            client.connect({ onSuccess: onConnect, onFailure: onFail, useSSL: true, timeout: 5, keepAliveInterval: 30 });
+        }
+
+        function onConnect() {
+            updateStatusText("Online", "on");
+            addLog("Connected to Server ✨", "info");
+            client.subscribe(TOPIC_STATUS);
+        }
+
+        function onFail(e) { updateStatusText("Retrying...", "off"); setTimeout(connect, 5000); }
+        function onLost(e) { if(e.errorCode !== 0) { updateStatusText("Offline", "off"); setTimeout(connect, 3000); } }
+
+        function updateStatusText(text, statusClass) {
+            const el = document.getElementById("txt-net");
+            const ic = document.getElementById("icon-net");
+            el.innerText = text;
+            el.className = "value " + statusClass;
+            ic.className = "fas fa-wifi " + statusClass;
+        }
+
+        function send(cmd) {
+            if(client && client.isConnected()) {
+                let msg = new Paho.MQTT.Message(JSON.stringify({ "cmd": cmd }));
+                msg.destinationName = TOPIC_CMD;
+                client.send(msg);
+                document.getElementById("txt-status").innerText = "Sending...";
+                addLog("Sent: " + cmd.toUpperCase(), "info");
+            } else {
+                alert("Offline!");
+            }
+        }
 
         function onMessage(msg) {
             try {
                 const data = JSON.parse(msg.payloadString);
-                const cardStatus = document.getElementById("card-status"), elStat = document.getElementById("txt-status");
                 
+                // --- UPDATE 1: แจ้งเตือนเมื่อรถหลุดเส้น ---
+                const cardStatus = document.getElementById("card-status");
+                const elStat = document.getElementById("txt-status");
+                const icBot = document.getElementById("icon-bot");
+
                 if (data.status === "lost") {
-                    elStat.innerText = "⚠️ OFF TRACK!"; elStat.className = "value off";
+                    // สถานะ: หลุดเส้น
+                    elStat.innerText = "⚠️ OFF TRACK!";
+                    elStat.className = "value off";
+                    // เพิ่ม Animation กระพริบสีแดง
                     cardStatus.className = "card alert-mode"; 
-                } else {
-                    cardStatus.className = "card";
-                    if(data.status === "delivering") { elStat.innerText = "Going Rm " + data.room; elStat.className = "value on"; }
-                    else { elStat.innerText = "Idle"; elStat.className = "value"; }
+                    icBot.className = "fas fa-dizzy active-icon"; // เปลี่ยนไอคอนเป็นหน้ามึน
+                    addLog("ALERT: Robot Lost Line! 😱", "err");
+                } 
+                else {
+                    // สถานะ: ปกติ
+                    cardStatus.className = "card"; // เอา Animation ออก
+                    
+                    if(data.status === "delivering") {
+                        elStat.innerText = "Going to Room " + data.room;
+                        elStat.className = "value on";
+                        icBot.className = "fas fa-robot active-icon";
+                        
+                        document.getElementById("robot-actor").style.left = "80%";
+                        document.getElementById("robot-actor").style.transform = "scaleX(1)";
+                        document.getElementById("dest-flag").style.opacity = "1";
+                    } else { 
+                        elStat.innerText = "Idle / Ready";
+                        elStat.className = "value";
+                        icBot.className = "fas fa-smile-wink";
+
+                        document.getElementById("robot-actor").style.left = "20px";
+                        document.getElementById("robot-actor").style.transform = "scaleX(-1)";
+                        document.getElementById("dest-flag").style.opacity = "0.2";
+                    }
                 }
-                document.getElementById("txt-cargo").innerText = data.cargo ? "Loaded" : "Empty";
+
+                // --- 2. Cargo Info ---
+                const elCargo = document.getElementById("txt-cargo");
+                const icCargo = document.getElementById("icon-cargo");
+                const cargoActor = document.getElementById("cargo-actor");
+
+                if(data.cargo) {
+                    elCargo.innerText = "Loaded"; elCargo.className = "value on";
+                    icCargo.className = "fas fa-gift active-icon";
+                    cargoActor.style.display = "block";
+                } else {
+                    elCargo.innerText = "Empty"; elCargo.className = "value";
+                    icCargo.className = "fas fa-cube";
+                    cargoActor.style.display = "none";
+                }
+
+                // --- 3. Distance ---
                 document.getElementById("txt-dist").innerText = data.distance + " cm";
-                document.getElementById("cargo-actor").style.display = data.cargo ? "block" : "none";
-            } catch(e) {}
+                
+                // Log logic
+                if(data.status === "delivering" && Math.random() > 0.8) addLog(`Moving to Room ${data.room}... 🚀`, "info");
+                if(data.distance < 20) addLog("Obstacle Detected! (Stop) 🛑", "warn");
+
+            } catch(e) { console.log(e); }
         }
+
+        function addLog(msg, type="info") {
+            const box = document.getElementById("log-box");
+            const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+            let css = "t-info";
+            if(type === "warn") css = "t-warn";
+            if(type === "err") css = "t-err";
+
+            box.innerHTML += `<div class="log-line"><span class="log-time">${time}</span><span class="${css}">${msg}</span></div>`;
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function clearLog() { document.getElementById("log-box").innerHTML = '<div class="log-line">--- Log Cleared ---</div>'; }
     </script>
 </body>
 </html>
