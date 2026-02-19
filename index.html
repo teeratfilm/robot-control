@@ -16,7 +16,6 @@
             --neon-green: #0aff50;
             --neon-red: #ff3131;
             --text-main: #ffffff;
-            --shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
         }
 
         body {
@@ -25,34 +24,36 @@
             display: flex; flex-direction: column; align-items: center; min-height: 100vh;
         }
 
-        /* --- Header & Layout --- */
         header {
             width: 100%; max-width: 500px; display: flex; justify-content: space-between;
             align-items: center; margin-bottom: 20px; background: var(--glass-bg);
             padding: 15px 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);
+            box-sizing: border-box;
         }
 
         .scene-container {
             width: 100%; max-width: 500px; height: 100px; background: rgba(0,0,0,0.3);
             border-radius: 20px; margin-bottom: 20px; position: relative; overflow: hidden;
             border: 1px solid rgba(255,255,255,0.1);
+            box-sizing: border-box;
         }
 
         .robot-actor {
             position: absolute; top: 50%; left: 10%; transform: translateY(-50%);
-            font-size: 2.5rem; color: var(--neon-blue); transition: all 1s ease-in-out;
+            font-size: 2.5rem; color: var(--neon-blue); transition: left 1s ease-in-out;
         }
 
-        .cargo-box { position: absolute; top: -10px; right: -5px; font-size: 0.8rem; color: var(--neon-green); display: none; }
+        .cargo-box { 
+            position: absolute; top: -10px; right: -5px; 
+            font-size: 0.8rem; color: var(--neon-green); display: none; 
+        }
 
-        /* --- Dashboard Grid --- */
         .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 500px; margin-bottom: 20px; }
         .card { background: var(--glass-bg); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
         .value { display: block; font-size: 1.1rem; font-weight: bold; margin-top: 5px; font-family: 'Rajdhani'; }
         .online { color: var(--neon-green); }
         .offline { color: var(--neon-red); }
 
-        /* --- Controls --- */
         .controls { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; max-width: 500px; }
         .btn {
             background: #1a1b26; border: 1px solid var(--neon-blue); padding: 15px;
@@ -60,21 +61,21 @@
             transition: 0.3s; text-align: center;
         }
         .btn:hover { background: var(--neon-blue); color: #000; box-shadow: 0 0 15px var(--neon-blue); }
+        .btn:active { transform: scale(0.95); }
 
-        /* --- Modal --- */
         #login-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 100; }
         .login-box { background: #161821; padding: 30px; border-radius: 20px; text-align: center; border: 1px solid var(--neon-blue); }
-        input { width: 80%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
+        input { width: 80%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; outline: none; }
     </style>
 </head>
 <body>
 
     <div id="login-modal">
         <div class="login-box">
-            <h2 style="color:var(--neon-blue)">SYSTEM LOGIN</h2>
+            <h2 style="color:var(--neon-blue); font-family:'Rajdhani'">SYSTEM LOGIN</h2>
             <input type="text" id="user" placeholder="User ID">
             <input type="password" id="pass" placeholder="Passcode">
-            <button class="btn" style="width:100%" onclick="login()">INITIALIZE</button>
+            <button class="btn" style="width:100%; margin-top: 10px;" onclick="login()">INITIALIZE</button>
             <p id="msg" style="color:var(--neon-red)"></p>
         </div>
     </div>
@@ -82,7 +83,7 @@
     <div id="app" style="display:none; width:100%; flex-direction:column; align-items:center;">
         <header>
             <h2 style="margin:0; font-family:'Rajdhani'">DELI<span style="color:var(--neon-blue)">BOT</span></h2>
-            <button onclick="logout()" style="background:none; border:1px solid var(--neon-red); color:var(--neon-red); cursor:pointer; border-radius:5px;">LOGOUT</button>
+            <button onclick="logout()" style="background:none; border:1px solid var(--neon-red); color:var(--neon-red); cursor:pointer; border-radius:5px; padding: 5px 15px;">LOGOUT</button>
         </header>
 
         <div class="scene-container">
@@ -109,15 +110,15 @@
 
         <div class="controls">
             <script>
+                // ส่งค่าพารามิเตอร์เป็นเลขจำนวนเต็มตรงๆ เพื่อให้ ESP32 เอาไป if (num % 2) ได้ง่าย
                 for(let i=1; i<=10; i++) {
-                    document.write(`<div class="btn" onclick="sendCmd('room${i}')">GO TO ROOM ${i < 10 ? '0'+i : i}</div>`);
+                    document.write(`<div class="btn" onclick="sendCmd(${i})">GO TO ROOM ${i < 10 ? '0'+i : i}</div>`);
                 }
             </script>
         </div>
     </div>
 
     <script>
-        // *** ตั้งค่า Topic ให้ตรงกับบอร์ด ESP32 ***
         const MQTT_HOST = "broker.hivemq.com";
         const MQTT_PORT = 8000; 
         const TOPIC_CMD = "pakkapon2006/command";
@@ -144,8 +145,10 @@
             client = new Paho.MQTT.Client(MQTT_HOST, MQTT_PORT, clientId);
             
             client.onMessageArrived = (msg) => {
-                const data = JSON.parse(msg.payloadString);
-                updateUI(data);
+                try {
+                    const data = JSON.parse(msg.payloadString);
+                    updateUI(data);
+                } catch(e) { console.log("JSON Parse Error: ", e); }
             };
 
             client.connect({
@@ -154,28 +157,30 @@
                     document.getElementById('txt-net').className = "value online";
                     client.subscribe(TOPIC_STATUS);
                 },
-                useSSL: false // เปลี่ยนเป็น true หากใช้ Port 8884
+                onFailure: () => {
+                    setTimeout(initMQTT, 5000); // Auto reconnect
+                },
+                useSSL: true // ใช้ https/wss ควรเปิด SSL
             });
         }
 
-        function sendCmd(room) {
+        function sendCmd(roomNumber) {
             if(client && client.isConnected()) {
-                const message = new Paho.MQTT.Message(JSON.stringify({cmd: room}));
+                const payload = JSON.stringify({cmd: roomNumber});
+                const message = new Paho.MQTT.Message(payload);
                 message.destinationName = TOPIC_CMD;
                 client.send(message);
-                document.getElementById('txt-status').innerText = "SENDING: " + room;
             } else {
                 alert("MQTT Disconnected!");
             }
         }
 
         function updateUI(data) {
-            // Update Cargo
             const cargoTxt = document.getElementById('txt-cargo');
             const cargoIcon = document.getElementById('cargo-actor');
             if(data.cargo) {
                 cargoTxt.innerText = "LOADED";
-                cargoTxt.style.color = "var(--neon-green)";
+                cargoTxt.style.color = "#0aff50";
                 cargoIcon.style.display = "block";
             } else {
                 cargoTxt.innerText = "EMPTY";
@@ -183,14 +188,17 @@
                 cargoIcon.style.display = "none";
             }
 
-            // Update Robot Position & Status
             const robot = document.getElementById('robot-actor');
             const statusTxt = document.getElementById('txt-status');
 
             if(data.status === "delivering") {
                 statusTxt.innerText = "DELIVERING TO ROOM " + data.room;
-                statusTxt.style.color = var(--neon-blue);
-                robot.style.left = "75%";
+                statusTxt.style.color = "#00f3ff";
+                robot.style.left = "60%";
+            } else if(data.status === "waiting_drop") {
+                statusTxt.innerText = "ARRIVED - WAITING DROP";
+                statusTxt.style.color = "#0aff50";
+                robot.style.left = "85%";
             } else if(data.status === "returning") {
                 statusTxt.innerText = "RETURNING HOME...";
                 statusTxt.style.color = "#ffaa00";
