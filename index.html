@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeliBot Dark Mode</title>
+    <title>DeliBot Dark Mode (3 Rooms)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
@@ -31,10 +31,10 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* --- Alert Animation (ไฟกระพริบสีแดง) --- */
+        /* --- Alert Animation (ไฟกระพริบสีแดงเมื่อหลุดเส้น) --- */
         @keyframes pulse-red { 
             0% { box-shadow: 0 0 0 0 rgba(255, 42, 109, 0.7); border-color: var(--danger); }
-            70% { box-shadow: 0 0 20px 10px rgba(255, 42, 109, 0); border-color: var(--danger); }
+            50% { box-shadow: 0 0 20px 10px rgba(255, 42, 109, 0); border-color: var(--danger); }
             100% { box-shadow: 0 0 0 0 rgba(255, 42, 109, 0); border-color: var(--danger); }
         }
         .alert-mode { 
@@ -61,7 +61,7 @@
         }
         .btn-logout:hover { background: var(--danger); color: white; box-shadow: 0 0 15px var(--danger); }
 
-        /* Scene Animation (การ์ตูนวิ่ง) */
+        /* Scene Animation (ตัวการ์ตูนวิ่ง) */
         .scene-container { 
             width: 100%; max-width: 600px; height: 140px; 
             background: #1e1e24; border-radius: 20px; 
@@ -104,7 +104,7 @@
         .off { color: var(--danger); text-shadow: 0 0 10px var(--danger); }
         .active-icon { color: var(--primary) !important; text-shadow: 0 0 15px var(--primary); }
 
-        /* Controls (3 Rooms) */
+        /* Controls (3 ห้อง) */
         .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 600px; margin-bottom: 20px; }
         .btn { 
             background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1); 
@@ -121,7 +121,7 @@
         .btn:active { transform: scale(0.95); }
 
         .btn-home { 
-            grid-column: span 3; /* เต็มแถว */
+            grid-column: span 3; /* ปุ่มยาวเต็มแถว */
             background: linear-gradient(90deg, #ff2a6d 0%, #ff5c8d 100%);
             border: none; color: white;
         }
@@ -190,9 +190,11 @@
     </div>
 
     <script>
-        const MQTT_HOST = "broker.hivemq.com", MQTT_PORT = 8884;
-        const TOPIC_CMD = "pakkapon2006/command"; 
-        const TOPIC_STATUS = "pakkapon2006/status";
+        // *** แก้ชื่อ Topic ให้ตรงกับ Arduino ***
+        const MQTT_HOST = "broker.hivemq.com";
+        const MQTT_PORT = 8884;
+        const TOPIC_CMD = "myrobot/command";  // แก้เป็น myrobot
+        const TOPIC_STATUS = "myrobot/status"; // แก้เป็น myrobot
         
         var client = null;
 
@@ -231,7 +233,7 @@
                 if (data.status === "lost") {
                     elStat.innerText = "OFF TRACK!"; 
                     elStat.className = "value off alert-text"; 
-                    cardStatus.className = "card alert-mode"; 
+                    cardStatus.className = "card alert-mode"; // เปิดไฟกระพริบแดง
                     icBot.className = "fas fa-exclamation-triangle active-icon";
                     addLog("CRITICAL: OFF TRACK!", "err");
                 } 
@@ -240,14 +242,12 @@
                     if(data.status === "delivering") { 
                         elStat.innerText = "Target: Room " + data.room; elStat.className = "value on"; 
                         icBot.className = "fas fa-robot active-icon";
-                        // Animation วิ่งขวา
                         document.getElementById("robot-actor").style.left = "80%";
                         document.getElementById("robot-actor").style.transform = "scaleX(1)";
                         document.getElementById("dest-flag").style.opacity = "1";
                     } 
                     else if(data.status === "returning") {
                         elStat.innerText = "Returning"; elStat.className = "value on"; 
-                        // Animation วิ่งกลับซ้าย
                         document.getElementById("robot-actor").style.left = "20px";
                         document.getElementById("robot-actor").style.transform = "scaleX(-1)";
                         document.getElementById("dest-flag").style.opacity = "0.2";
