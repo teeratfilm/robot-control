@@ -3,128 +3,222 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeliBot Pro - pakkapon2006</title>
+    <title>DeliBot Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@700&family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --bg-color: #0b0c15;
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --neon-blue: #00f3ff;
-            --neon-green: #0aff50;
-            --neon-red: #ff3131;
+            --bg-dark: #0f111a;
+            --panel-bg: #1a1d2d;
+            --primary: #00f3ff;
+            --success: #0aff50;
+            --danger: #ff3b3b;
+            --warning: #ffb800;
             --text-main: #ffffff;
+            --text-muted: #8a8d9e;
+            --border: rgba(255, 255, 255, 0.08);
         }
 
         body {
-            margin: 0; padding: 20px; font-family: 'Poppins', sans-serif;
-            background-color: var(--bg-color); color: var(--text-main);
-            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            margin: 0; padding: 20px; 
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark); 
+            color: var(--text-main);
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; box-sizing: border-box;
         }
 
+        .container {
+            width: 100%; max-width: 550px;
+            display: flex; flex-direction: column; gap: 15px;
+        }
+
+        /* --- Header --- */
         header {
-            width: 100%; max-width: 500px; display: flex; justify-content: space-between;
-            align-items: center; margin-bottom: 20px; background: var(--glass-bg);
-            padding: 15px 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);
-            box-sizing: border-box;
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--panel-bg); padding: 15px 25px;
+            border-radius: 12px; border: 1px solid var(--border);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
         }
-
-        .scene-container {
-            width: 100%; max-width: 500px; height: 100px; background: rgba(0,0,0,0.3);
-            border-radius: 20px; margin-bottom: 20px; position: relative; overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.1);
-            box-sizing: border-box;
+        .logo { margin: 0; font-family: 'Rajdhani', sans-serif; font-size: 1.8rem; font-weight: 700; letter-spacing: 1px;}
+        .logo span { color: var(--primary); }
+        .btn-logout {
+            background: transparent; border: 1px solid var(--danger); color: var(--danger);
+            padding: 6px 15px; border-radius: 6px; cursor: pointer; font-family: inherit; font-weight: 600;
+            transition: all 0.2s;
         }
+        .btn-logout:hover { background: rgba(255, 59, 59, 0.1); }
 
-        .robot-actor {
+        /* --- Robot Scene --- */
+        .scene {
+            height: 90px; background: #131520; border-radius: 12px;
+            border: 1px solid var(--border); position: relative; overflow: hidden;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+        }
+        .robot-icon {
             position: absolute; top: 50%; left: 10%; transform: translateY(-50%);
-            font-size: 2.5rem; color: var(--neon-blue); transition: left 1s ease-in-out;
+            font-size: 2.5rem; color: var(--primary); transition: left 1s ease-in-out;
+            filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.4));
+        }
+        .cargo-box {
+            position: absolute; top: -5px; right: -10px; font-size: 0.9rem;
+            color: var(--warning); display: none;
         }
 
-        .cargo-box { 
-            position: absolute; top: -10px; right: -5px; 
-            font-size: 0.8rem; color: var(--neon-green); display: none; 
+        /* --- Status Cards --- */
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .card {
+            background: var(--panel-bg); padding: 15px; border-radius: 12px;
+            border: 1px solid var(--border); text-align: center;
         }
+        .card-full { grid-column: span 2; }
+        .card-title { display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: 600; letter-spacing: 1px; margin-bottom: 5px; text-transform: uppercase;}
+        .card-value { font-family: 'Rajdhani', sans-serif; font-size: 1.3rem; font-weight: 700; letter-spacing: 0.5px;}
+        
+        /* Status Colors */
+        .text-online { color: var(--success); text-shadow: 0 0 10px rgba(10, 255, 80, 0.3); }
+        .text-offline { color: var(--danger); }
+        .text-idle { color: var(--text-main); }
+        .text-active { color: var(--primary); text-shadow: 0 0 10px rgba(0, 243, 255, 0.3); }
 
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 500px; margin-bottom: 20px; }
-        .card { background: var(--glass-bg); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
-        .value { display: block; font-size: 1.1rem; font-weight: bold; margin-top: 5px; font-family: 'Rajdhani'; }
-        .online { color: var(--neon-green); }
-        .offline { color: var(--neon-red); }
-
-        .controls { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; max-width: 500px; }
-        .btn {
-            background: #1a1b26; border: 1px solid var(--neon-blue); padding: 15px;
-            border-radius: 10px; color: #fff; cursor: pointer; font-weight: bold;
-            transition: 0.3s; text-align: center;
+        /* --- Controls --- */
+        .controls {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+            background: var(--panel-bg); padding: 20px; border-radius: 12px;
+            border: 1px solid var(--border);
         }
-        .btn:hover { background: var(--neon-blue); color: #000; box-shadow: 0 0 15px var(--neon-blue); }
-        .btn:active { transform: scale(0.95); }
+        .btn-room {
+            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.1);
+            padding: 12px; border-radius: 8px; color: var(--text-main);
+            font-family: 'Rajdhani', sans-serif; font-size: 1.1rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s ease;
+        }
+        .btn-room:hover { 
+            background: rgba(0, 243, 255, 0.1); border-color: var(--primary);
+            color: var(--primary); transform: translateY(-2px);
+        }
+        .btn-room:active { transform: translateY(0); }
 
-        #login-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 100; }
-        .login-box { background: #161821; padding: 30px; border-radius: 20px; text-align: center; border: 1px solid var(--neon-blue); }
-        input { width: 80%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; outline: none; }
+        /* --- System Log --- */
+        .log-container {
+            background: #0a0b10; border-radius: 12px; border: 1px solid var(--border);
+            padding: 15px; display: flex; flex-direction: column; gap: 8px;
+        }
+        .log-header {
+            font-size: 0.8rem; color: var(--text-muted); font-weight: 600;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 5px;
+        }
+        .log-box {
+            height: 120px; overflow-y: auto; font-family: monospace; font-size: 0.85rem;
+            color: #c0c5ce; display: flex; flex-direction: column; gap: 4px;
+        }
+        .log-entry span.time { color: var(--text-muted); margin-right: 8px; }
+        .log-entry span.info { color: var(--primary); }
+        .log-entry span.warn { color: var(--warning); }
+        .log-entry span.success { color: var(--success); }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+        /* --- Login Modal --- */
+        #login-modal { 
+            position: fixed; inset: 0; background: rgba(15, 17, 26, 0.95); 
+            display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(5px);
+        }
+        .login-box { 
+            background: var(--panel-bg); padding: 40px; border-radius: 16px; 
+            text-align: center; border: 1px solid var(--border); width: 300px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .input-field { 
+            width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; 
+            border: 1px solid var(--border); background: rgba(0,0,0,0.2); color: white;
+            box-sizing: border-box; font-family: inherit;
+        }
+        .input-field:focus { outline: none; border-color: var(--primary); }
+        .btn-login {
+            width: 100%; background: var(--primary); color: #000; padding: 12px;
+            border: none; border-radius: 8px; font-weight: bold; margin-top: 15px;
+            cursor: pointer; transition: 0.2s; font-family: inherit; font-size: 1rem;
+        }
+        .btn-login:hover { box-shadow: 0 0 15px rgba(0, 243, 255, 0.4); }
     </style>
 </head>
 <body>
 
     <div id="login-modal">
         <div class="login-box">
-            <h2 style="color:var(--neon-blue); font-family:'Rajdhani'">SYSTEM LOGIN</h2>
-            <input type="text" id="user" placeholder="User ID">
-            <input type="password" id="pass" placeholder="Passcode">
-            <button class="btn" style="width:100%; margin-top: 10px;" onclick="login()">INITIALIZE</button>
-            <p id="msg" style="color:var(--neon-red)"></p>
+            <h2 style="margin-top:0; color:var(--text-main); font-family:'Rajdhani'">SYSTEM <span style="color:var(--primary)">LOGIN</span></h2>
+            <input type="text" id="user" class="input-field" placeholder="User ID">
+            <input type="password" id="pass" class="input-field" placeholder="Passcode">
+            <button class="btn-login" onclick="login()">ACCESS SYSTEM</button>
+            <p id="msg" style="color:var(--danger); font-size: 0.85rem; margin-top:15px; min-height: 20px;"></p>
         </div>
     </div>
 
-    <div id="app" style="display:none; width:100%; flex-direction:column; align-items:center;">
+    <div id="app" class="container" style="display:none;">
+        
         <header>
-            <h2 style="margin:0; font-family:'Rajdhani'">DELI<span style="color:var(--neon-blue)">BOT</span></h2>
-            <button onclick="logout()" style="background:none; border:1px solid var(--neon-red); color:var(--neon-red); cursor:pointer; border-radius:5px; padding: 5px 15px;">LOGOUT</button>
+            <h1 class="logo">DELI<span>BOT</span></h1>
+            <button class="btn-logout" onclick="logout()"><i class="fas fa-power-off"></i> LOGOUT</button>
         </header>
 
-        <div class="scene-container">
-            <div id="robot-actor" class="robot-actor">
+        <div class="scene">
+            <div id="robot-icon" class="robot-icon">
                 <i class="fas fa-robot"></i>
-                <i id="cargo-actor" class="fas fa-box cargo-box"></i>
+                <i id="cargo-icon" class="fas fa-box cargo-box"></i>
             </div>
         </div>
 
-        <div class="dashboard">
+        <div class="status-grid">
             <div class="card">
-                <span style="font-size:0.7rem; color:#888;">CONNECTION</span>
-                <span id="txt-net" class="value offline">OFFLINE</span>
+                <span class="card-title">Connection</span>
+                <span id="txt-net" class="card-value text-offline">OFFLINE</span>
             </div>
             <div class="card">
-                <span style="font-size:0.7rem; color:#888;">CARGO STATUS</span>
-                <span id="txt-cargo" class="value">EMPTY</span>
+                <span class="card-title">Cargo Status</span>
+                <span id="txt-cargo" class="card-value text-idle">EMPTY</span>
             </div>
-            <div class="card" style="grid-column: span 2;">
-                <span style="font-size:0.7rem; color:#888;">BOT STATUS</span>
-                <span id="txt-status" class="value">IDLE (READY)</span>
+            <div class="card card-full">
+                <span class="card-title">Current Operation</span>
+                <span id="txt-status" class="card-value text-idle">STANDBY</span>
             </div>
+        </div>
+
+        <div class="log-container">
+            <div class="log-header">
+                <span><i class="fas fa-terminal"></i> SYSTEM LOG</span>
+                <button onclick="clearLog()" style="background:none; border:none; color:var(--text-muted); cursor:pointer;"><i class="fas fa-trash-alt"></i></button>
+            </div>
+            <div id="log-box" class="log-box">
+                </div>
         </div>
 
         <div class="controls">
             <script>
-                // ส่งค่าพารามิเตอร์เป็นเลขจำนวนเต็มตรงๆ เพื่อให้ ESP32 เอาไป if (num % 2) ได้ง่าย
                 for(let i=1; i<=10; i++) {
-                    document.write(`<div class="btn" onclick="sendCmd(${i})">GO TO ROOM ${i < 10 ? '0'+i : i}</div>`);
+                    let num = i < 10 ? '0'+i : i;
+                    document.write(`<button class="btn-room" onclick="sendCmd(${i})">ROOM ${num}</button>`);
                 }
             </script>
         </div>
+
     </div>
 
     <script>
+        // --- MQTT Config ---
         const MQTT_HOST = "broker.hivemq.com";
         const MQTT_PORT = 8000; 
         const TOPIC_CMD = "pakkapon2006/command";
         const TOPIC_STATUS = "pakkapon2006/status";
         
         let client;
+        let lastStatus = "";
 
         function login() {
             const u = document.getElementById('user').value;
@@ -132,15 +226,43 @@
             if(u === "admin" && p === "1234") {
                 document.getElementById('login-modal').style.display = 'none';
                 document.getElementById('app').style.display = 'flex';
+                addLog("System initialized. Authenticated as Admin.", "success");
                 initMQTT();
             } else {
-                document.getElementById('msg').innerText = "Invalid Credentials";
+                document.getElementById('msg').innerText = "Access Denied: Invalid Credentials";
             }
         }
 
         function logout() { location.reload(); }
 
+        // --- Log System ---
+        function addLog(message, type = "normal") {
+            const logBox = document.getElementById('log-box');
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2,'0') + ":" + 
+                            now.getMinutes().toString().padStart(2,'0') + ":" + 
+                            now.getSeconds().toString().padStart(2,'0');
+            
+            const entry = document.createElement('div');
+            entry.className = "log-entry";
+            
+            let typeClass = "";
+            if(type === "info") typeClass = "info";
+            else if(type === "warn") typeClass = "warn";
+            else if(type === "success") typeClass = "success";
+
+            entry.innerHTML = `<span class="time">[${timeStr}]</span> <span class="${typeClass}">${message}</span>`;
+            logBox.appendChild(entry);
+            logBox.scrollTop = logBox.scrollHeight; // Auto-scroll
+        }
+
+        function clearLog() {
+            document.getElementById('log-box').innerHTML = "";
+            addLog("System log cleared.");
+        }
+
         function initMQTT() {
+            addLog("Connecting to server...", "normal");
             const clientId = "web_" + Math.random().toString(16).substr(2, 5);
             client = new Paho.MQTT.Client(MQTT_HOST, MQTT_PORT, clientId);
             
@@ -148,19 +270,21 @@
                 try {
                     const data = JSON.parse(msg.payloadString);
                     updateUI(data);
-                } catch(e) { console.log("JSON Parse Error: ", e); }
+                } catch(e) { console.log("JSON Error"); }
             };
 
             client.connect({
                 onSuccess: () => {
                     document.getElementById('txt-net').innerText = "ONLINE";
-                    document.getElementById('txt-net').className = "value online";
+                    document.getElementById('txt-net').className = "card-value text-online";
+                    addLog("Connected to MQTT Broker successfully.", "success");
                     client.subscribe(TOPIC_STATUS);
                 },
                 onFailure: () => {
-                    setTimeout(initMQTT, 5000); // Auto reconnect
+                    addLog("Connection failed. Retrying...", "warn");
+                    setTimeout(initMQTT, 5000);
                 },
-                useSSL: true // ใช้ https/wss ควรเปิด SSL
+                useSSL: true
             });
         }
 
@@ -170,43 +294,60 @@
                 const message = new Paho.MQTT.Message(payload);
                 message.destinationName = TOPIC_CMD;
                 client.send(message);
+                addLog(`Command sent: Navigate to Room ${roomNumber}`, "info");
             } else {
-                alert("MQTT Disconnected!");
+                alert("System is currently offline!");
             }
         }
 
         function updateUI(data) {
+            // Update Cargo
             const cargoTxt = document.getElementById('txt-cargo');
-            const cargoIcon = document.getElementById('cargo-actor');
+            const cargoIcon = document.getElementById('cargo-icon');
             if(data.cargo) {
                 cargoTxt.innerText = "LOADED";
-                cargoTxt.style.color = "#0aff50";
+                cargoTxt.style.color = "var(--warning)";
                 cargoIcon.style.display = "block";
             } else {
                 cargoTxt.innerText = "EMPTY";
-                cargoTxt.style.color = "#fff";
+                cargoTxt.style.color = "var(--text-main)";
                 cargoIcon.style.display = "none";
             }
 
-            const robot = document.getElementById('robot-actor');
+            // Update Status & Robot Position
+            const robot = document.getElementById('robot-icon');
             const statusTxt = document.getElementById('txt-status');
+            let currentStatusStr = "";
 
             if(data.status === "delivering") {
-                statusTxt.innerText = "DELIVERING TO ROOM " + data.room;
-                statusTxt.style.color = "#00f3ff";
+                statusTxt.innerText = "EN ROUTE TO ROOM " + data.room;
+                statusTxt.className = "card-value text-active";
                 robot.style.left = "60%";
-            } else if(data.status === "waiting_drop") {
-                statusTxt.innerText = "ARRIVED - WAITING DROP";
-                statusTxt.style.color = "#0aff50";
+                currentStatusStr = `Navigating to Room ${data.room}...`;
+            } 
+            else if(data.status === "waiting_drop") {
+                statusTxt.innerText = "ARRIVED - WAITING FOR DROP";
+                statusTxt.className = "card-value text-online";
                 robot.style.left = "85%";
-            } else if(data.status === "returning") {
-                statusTxt.innerText = "RETURNING HOME...";
-                statusTxt.style.color = "#ffaa00";
+                currentStatusStr = `Arrived at Room ${data.room}. Waiting for cargo removal.`;
+            } 
+            else if(data.status === "returning") {
+                statusTxt.innerText = "RETURNING TO BASE";
+                statusTxt.style.color = "var(--warning)";
                 robot.style.left = "30%";
-            } else {
-                statusTxt.innerText = "IDLE (READY)";
-                statusTxt.style.color = "#fff";
+                currentStatusStr = "Operation complete. Returning to base.";
+            } 
+            else {
+                statusTxt.innerText = "STANDBY (READY)";
+                statusTxt.className = "card-value text-idle";
                 robot.style.left = "10%";
+                currentStatusStr = "Robot is on standby.";
+            }
+
+            // เพิ่ม Log เฉพาะเมื่อสถานะ (status) มีการเปลี่ยนแปลงเพื่อไม่ให้ข้อความรกเกินไป
+            if(data.status !== lastStatus) {
+                if(lastStatus !== "") addLog(currentStatusStr);
+                lastStatus = data.status;
             }
         }
     </script>
