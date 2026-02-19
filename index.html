@@ -3,201 +3,275 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeliBot Dark Mode</title>
+    <title>DeliBot Pro Interface</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Poppins:wght@300;600&display=swap" rel="stylesheet">
     
     <style>
-        /* --- Dark Theme Variables --- */
         :root {
-            --bg-dark: #0f0f13;
-            --card-bg: rgba(30, 30, 35, 0.85);
-            --primary: #00d4ff; /* ฟ้าโฮโลแกรม */
-            --secondary: #bd00ff; /* ม่วงนีออน */
+            --bg-color: #0b0c15;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff00ff;
+            --neon-red: #ff3131;
+            --neon-green: #0aff50;
             --text-main: #ffffff;
-            --text-sub: #b0b0b0;
-            --success: #00ff9d; 
-            --danger: #ff2a6d; 
-            --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-            --border: 1px solid rgba(255, 255, 255, 0.1);
-            --road-color: #2c2c2c;
+            --text-muted: #8b9bb4;
+            --shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
         }
 
+        * { box-sizing: border-box; }
+
         body {
-            margin: 0; padding: 20px; font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #0f0f13 0%, #1a1a2e 100%);
-            color: var(--text-main); min-height: 100vh; 
+            margin: 0; padding: 20px;
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 243, 255, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(255, 0, 255, 0.1) 0%, transparent 20%);
+            color: var(--text-main);
+            min-height: 100vh;
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* --- Alert Animation (ไฟกระพริบสีแดง) --- */
-        @keyframes pulse-red { 
-            0% { box-shadow: 0 0 0 0 rgba(255, 42, 109, 0.7); border-color: var(--danger); }
-            70% { box-shadow: 0 0 20px 10px rgba(255, 42, 109, 0); border-color: var(--danger); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 42, 109, 0); border-color: var(--danger); }
+        /* --- Header --- */
+        header {
+            width: 100%; max-width: 500px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 25px;
+            padding: 15px 25px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            border: var(--glass-border);
+            box-shadow: var(--shadow);
         }
-        .alert-mode { 
-            animation: pulse-red 1s infinite; 
-            background: rgba(255, 42, 109, 0.15) !important; /* พื้นหลังแดงจางๆ */
-            color: var(--danger) !important;
+        h1 { 
+            margin: 0; font-family: 'Rajdhani', sans-serif; 
+            font-weight: 700; font-size: 1.8rem; letter-spacing: 2px;
+            background: linear-gradient(90deg, #fff, var(--neon-blue));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-        .alert-text { color: var(--danger) !important; font-weight: 900 !important; }
-
-        header { 
-            width: 100%; max-width: 600px; 
-            display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 20px; background: var(--card-bg); 
-            backdrop-filter: blur(10px); padding: 15px 25px; border-radius: 20px; 
-            box-shadow: var(--shadow); border: var(--border); 
+        .btn-logout {
+            background: rgba(255, 49, 49, 0.1);
+            border: 1px solid var(--neon-red);
+            color: var(--neon-red);
+            padding: 8px 15px; border-radius: 8px;
+            cursor: pointer; transition: 0.3s;
+            font-size: 0.8rem; font-weight: 600;
         }
-        h1 { margin: 0; font-weight: 800; font-size: 1.6rem; color: var(--text-main); letter-spacing: 1px; }
-        h1 span { color: var(--primary); }
-
-        .btn-logout { 
-            background: transparent; border: 2px solid var(--danger); 
-            color: var(--danger); padding: 8px 20px; 
-            border-radius: 50px; cursor: pointer; font-weight: 600; transition: 0.3s;
-        }
-        .btn-logout:hover { background: var(--danger); color: white; box-shadow: 0 0 15px var(--danger); }
-
-        /* Scene Animation (การ์ตูนวิ่ง) */
-        .scene-container { 
-            width: 100%; max-width: 600px; height: 140px; 
-            background: #1e1e24; border-radius: 20px; 
-            margin-bottom: 20px; position: relative; overflow: hidden; 
-            box-shadow: var(--shadow); border: var(--border); 
-        }
-        .road { 
-            position: absolute; bottom: 0; width: 100%; height: 40px; 
-            background: var(--road-color); border-top: 2px solid #444;
-        }
-        .road::after {
-            content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 2px;
-            background: repeating-linear-gradient(90deg, #666, #666 30px, transparent 30px, transparent 60px);
-        }
-        .robot-actor { 
-            position: absolute; bottom: 15px; left: 20px; 
-            font-size: 3.5rem; color: var(--primary); 
-            transition: all 1.5s cubic-bezier(0.25, 1, 0.5, 1); /* วิ่งนุ่มนวล */
-            filter: drop-shadow(0 0 10px var(--primary));
-            z-index: 10; transform: scaleX(1);
-        }
-        .cargo-actor { position: absolute; top: -15px; right: 5px; font-size: 1.3rem; color: var(--secondary); display: none; }
-        .destination-flag { 
-            position: absolute; bottom: 45px; right: 30px; 
-            font-size: 2.2rem; color: var(--success); opacity: 0.2; transition: 0.3s; 
+        .btn-logout:hover {
+            background: var(--neon-red); color: #fff;
+            box-shadow: 0 0 15px var(--neon-red);
         }
 
-        /* Dashboard */
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 600px; margin-bottom: 20px; }
-        .card { 
-            background: var(--card-bg); padding: 20px; border-radius: 20px; 
-            box-shadow: var(--shadow); display: flex; flex-direction: column; 
-            align-items: center; border: var(--border); transition: 0.3s; 
+        /* --- Scene Animation --- */
+        .scene-container {
+            width: 100%; max-width: 500px; height: 120px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 20px; margin-bottom: 20px;
+            position: relative; overflow: hidden;
+            border: var(--glass-border);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
         }
-        .card i { font-size: 1.8rem; margin-bottom: 8px; color: var(--text-sub); }
-        .label { font-size: 0.75rem; color: var(--text-sub); text-transform: uppercase; letter-spacing: 1px; }
-        .value { font-size: 1.2rem; font-weight: 700; margin-top: 5px; color: var(--text-main); }
-        
-        .on { color: var(--success); text-shadow: 0 0 10px var(--success); }
-        .off { color: var(--danger); text-shadow: 0 0 10px var(--danger); }
-        .active-icon { color: var(--primary) !important; text-shadow: 0 0 15px var(--primary); }
+        .track-line {
+            position: absolute; top: 50%; left: 0; width: 100%; height: 2px;
+            background: rgba(255,255,255,0.1);
+            z-index: 0;
+        }
+        .robot-actor {
+            position: absolute; top: 50%; left: 20px;
+            transform: translateY(-50%);
+            font-size: 3rem; color: var(--neon-blue);
+            transition: left 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+            filter: drop-shadow(0 0 10px var(--neon-blue));
+            z-index: 2;
+        }
+        .cargo-actor {
+            position: absolute; top: -10px; right: -5px;
+            font-size: 1rem; color: var(--neon-pink);
+            animation: float 2s infinite ease-in-out;
+            display: none;
+        }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 
-        /* Controls */
-        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 600px; margin-bottom: 20px; }
-        .btn { 
-            background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1); 
-            padding: 15px 0; border-radius: 15px; cursor: pointer; 
-            display: flex; flex-direction: column; align-items: center; 
-            color: var(--text-main); font-family: 'Poppins'; font-weight: 600;
+        /* --- Dashboard Grid --- */
+        .dashboard {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
+            width: 100%; max-width: 500px; margin-bottom: 25px;
+        }
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            padding: 20px; border-radius: 15px;
+            border: var(--glass-border);
+            display: flex; flex-direction: column; align-items: center;
             transition: 0.3s;
         }
-        .btn i { margin-bottom: 5px; color: var(--primary); font-size: 1.2rem; }
-        .btn:hover { 
-            background: rgba(0, 212, 255, 0.1); border-color: var(--primary); 
-            transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0, 212, 255, 0.2);
+        .card:hover { transform: translateY(-3px); background: rgba(255,255,255,0.08); }
+        
+        .card i { font-size: 1.5rem; margin-bottom: 10px; color: var(--text-muted); transition: 0.3s; }
+        .label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .value { font-size: 1.1rem; font-weight: 600; margin-top: 5px; color: #fff; font-family: 'Rajdhani', sans-serif; }
+
+        /* Status Colors */
+        .online { color: var(--neon-green); text-shadow: 0 0 10px var(--neon-green); }
+        .offline { color: var(--neon-red); text-shadow: 0 0 10px var(--neon-red); }
+        .active-icon { color: var(--neon-blue) !important; text-shadow: 0 0 15px var(--neon-blue); }
+
+        /* --- Alert Mode (Flash Red) --- */
+        .alert-mode {
+            border: 1px solid var(--neon-red) !important;
+            box-shadow: 0 0 20px var(--neon-red), inset 0 0 20px rgba(255, 49, 49, 0.2) !important;
+            animation: shake 0.5s infinite;
         }
-        .btn:active { transform: scale(0.95); }
+        .alert-text { color: var(--neon-red) !important; font-weight: 800; letter-spacing: 1px; }
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } 100% { transform: translateX(0); } }
 
-        .btn-home { 
-            grid-column: span 2; 
-            background: linear-gradient(90deg, #ff2a6d 0%, #ff5c8d 100%);
-            border: none; color: white;
+        /* --- Controls (Room Buttons) --- */
+        .controls {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+            width: 100%; max-width: 500px; margin-bottom: 25px;
         }
-        .btn-home:hover { background: linear-gradient(90deg, #ff0f5b 0%, #ff4079 100%); box-shadow: 0 0 20px rgba(255, 42, 109, 0.4); }
+        .btn {
+            background: linear-gradient(145deg, #1a1b26, #13141c);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 15px; border-radius: 12px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+            color: var(--text-muted); font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 1.1rem;
+            transition: all 0.2s ease;
+            box-shadow: 4px 4px 10px rgba(0,0,0,0.3), -2px -2px 5px rgba(255,255,255,0.02);
+        }
+        .btn:hover {
+            color: #fff; border-color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn i { font-size: 1rem; }
 
-        /* Log Box */
-        .log-wrapper { width: 100%; max-width: 600px; background: var(--card-bg); border-radius: 20px; box-shadow: var(--shadow); overflow: hidden; border: var(--border); }
-        .log-header { padding: 12px 25px; background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.85rem; color: var(--text-sub); display: flex; justify-content: space-between; }
-        .log-content { height: 120px; padding: 15px; overflow-y: auto; font-size: 0.8rem; scrollbar-width: thin; }
-        .log-line { margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px dashed rgba(255,255,255,0.1); }
-        .log-time { color: var(--primary); margin-right: 10px; font-weight: 600; }
-        .t-info { color: var(--text-main); } .t-warn { color: #ffd700; } .t-err { color: var(--danger); font-weight: bold; }
+        .btn-home {
+            grid-column: span 2;
+            background: linear-gradient(90deg, #ff00cc, #333399);
+            color: white; border: none; font-size: 1.2rem;
+        }
+        .btn-home:hover { box-shadow: 0 0 20px rgba(255, 0, 204, 0.5); }
 
-        /* Login Modal */
-        #login-modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 999; backdrop-filter: blur(5px); }
-        .login-box { text-align: center; width: 280px; background: #1e1e24; padding: 40px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 30px rgba(0,212,255,0.2); }
-        .inp { width: 100%; padding: 12px; margin: 10px 0; background: #2c2c35; border: 1px solid #444; border-radius: 10px; text-align: center; color: white; }
-        .btn-login { width: 100%; padding: 12px; background: var(--primary); color: #000; border: none; font-weight: 700; border-radius: 10px; cursor: pointer; margin-top: 10px; }
+        /* --- Log --- */
+        .log-wrapper {
+            width: 100%; max-width: 500px;
+            background: #000; border-radius: 15px;
+            border: 1px solid #222; overflow: hidden;
+            font-family: monospace; font-size: 0.8rem;
+        }
+        .log-header {
+            padding: 8px 15px; background: #111; color: #666;
+            display: flex; justify-content: space-between; border-bottom: 1px solid #222;
+        }
+        .log-content { height: 100px; padding: 10px; overflow-y: auto; color: #0f0; }
+        .log-line { margin-bottom: 4px; border-bottom: 1px solid #111; padding-bottom: 2px; }
+        .ts { color: #555; margin-right: 8px; }
+
+        /* --- Modal --- */
+        #login-modal {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.9); backdrop-filter: blur(5px);
+            display: flex; align-items: center; justify-content: center; z-index: 999;
+        }
+        .login-box {
+            background: #161821; padding: 40px; border-radius: 20px;
+            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.15);
+            text-align: center; width: 300px;
+        }
+        .inp {
+            width: 100%; padding: 12px; margin: 10px 0;
+            background: #0b0c15; border: 1px solid #333; color: #fff;
+            border-radius: 8px; text-align: center; outline: none;
+        }
+        .inp:focus { border-color: var(--neon-blue); }
+        .btn-login {
+            width: 100%; padding: 12px; margin-top: 10px;
+            background: var(--neon-blue); border: none; border-radius: 8px;
+            font-weight: bold; cursor: pointer;
+        }
     </style>
 </head>
 <body>
+
     <div id="login-modal">
         <div class="login-box">
-            <h2 style="color:white; margin-bottom:20px;">SYSTEM <span style="color:var(--primary)">LOGIN</span></h2>
-            <input type="text" id="user" class="inp" placeholder="Username">
-            <input type="password" id="pass" class="inp" placeholder="Password">
-            <button class="btn-login" onclick="login()">ACCESS</button>
-            <p id="msg" style="color:var(--danger); margin-top:15px; font-size:0.8rem;"></p>
+            <h2 style="color:#fff; margin-bottom:20px;">SYSTEM <span style="color:var(--neon-blue)">ACCESS</span></h2>
+            <input type="text" id="user" class="inp" placeholder="User ID">
+            <input type="password" id="pass" class="inp" placeholder="Passcode">
+            <button class="btn-login" onclick="login()">INITIALIZE</button>
+            <p id="msg" style="color:var(--neon-red); margin-top:10px; font-size:0.8rem;"></p>
         </div>
     </div>
 
     <div id="app" style="display:none; width:100%; flex-direction:column; align-items:center;">
-        <header><h1>Deli<span>Bot</span> <i class="fas fa-microchip"></i></h1><button class="btn-logout" onclick="logout()"><i class="fas fa-power-off"></i></button></header>
-        
+        <header>
+            <h1>DELI<span>BOT</span></h1>
+            <div class="btn-logout" onclick="logout()">DISCONNECT</div>
+        </header>
+
         <div class="scene-container">
-            <div class="destination-flag" id="dest-flag"><i class="fas fa-map-marker-alt"></i></div>
+            <div class="track-line"></div>
             <div class="robot-actor" id="robot-actor">
                 <i class="fas fa-robot"></i>
-                <i class="fas fa-box cargo-actor" id="cargo-actor"></i>
+                <i class="fas fa-cube cargo-actor" id="cargo-actor"></i>
             </div>
-            <div class="road"></div>
         </div>
 
         <div class="dashboard">
-            <div class="card"><i class="fas fa-wifi"></i><span class="label">Status</span><span class="value off" id="txt-net">Offline</span></div>
-            <div class="card"><i class="fas fa-cubes"></i><span class="label">Cargo</span><span class="value" id="txt-cargo">Empty</span></div>
-            <div class="card" id="card-status"><i class="fas fa-cogs" id="icon-bot"></i><span class="label">Action</span><span class="value" id="txt-status">Idle</span></div>
-            <div class="card"><i class="fas fa-tachometer-alt"></i><span class="label">Distance</span><span class="value" id="txt-dist">-- cm</span></div>
+            <div class="card">
+                <i class="fas fa-wifi" id="icon-net"></i>
+                <span class="label">CONNECTION</span>
+                <span class="value offline" id="txt-net">OFFLINE</span>
+            </div>
+            <div class="card">
+                <i class="fas fa-box-open" id="icon-cargo"></i>
+                <span class="label">CARGO BAY</span>
+                <span class="value" id="txt-cargo">EMPTY</span>
+            </div>
+            <div class="card" id="card-status">
+                <i class="fas fa-microchip" id="icon-bot"></i>
+                <span class="label">SYSTEM STATUS</span>
+                <span class="value" id="txt-status">STANDBY</span>
+            </div>
+            <div class="card">
+                <i class="fas fa-ruler-combined"></i>
+                <span class="label">PROXIMITY</span>
+                <span class="value" id="txt-dist">-- CM</span>
+            </div>
         </div>
-        
+
         <div class="controls">
-            <button class="btn" onclick="send('room1')"><i class="fas fa-door-closed"></i> Room 1</button>
-            <button class="btn" onclick="send('room2')"><i class="fas fa-door-closed"></i> Room 2</button>
-            <button class="btn" onclick="send('room3')"><i class="fas fa-door-closed"></i> Room 3</button>
-            <button class="btn" onclick="send('room4')"><i class="fas fa-door-closed"></i> Room 4</button>
-            <button class="btn" onclick="send('room5')"><i class="fas fa-door-closed"></i> Room 5</button>
-            <button class="btn" onclick="send('room6')"><i class="fas fa-door-closed"></i> Room 6</button>
-            <button class="btn" onclick="send('room7')"><i class="fas fa-door-closed"></i> Room 7</button>
-            <button class="btn" onclick="send('room8')"><i class="fas fa-door-closed"></i> Room 8</button>
-            <button class="btn" onclick="send('room9')"><i class="fas fa-door-closed"></i> Room 9</button>
-            <button class="btn" onclick="send('room10')"><i class="fas fa-door-closed"></i> Room 10</button>
-            
-            <button class="btn btn-home" onclick="send('return')"><i class="fas fa-undo-alt"></i> RETURN TO BASE</button>
+            <div class="btn" onclick="send('room1')"><span>ROOM 01</span></div>
+            <div class="btn" onclick="send('room2')"><span>ROOM 02</span></div>
+            <div class="btn" onclick="send('room3')"><span>ROOM 03</span></div>
+            <div class="btn" onclick="send('room4')"><span>ROOM 04</span></div>
+            <div class="btn" onclick="send('room5')"><span>ROOM 05</span></div>
+            <div class="btn" onclick="send('room6')"><span>ROOM 06</span></div>
+            <div class="btn" onclick="send('room7')"><span>ROOM 07</span></div>
+            <div class="btn" onclick="send('room8')"><span>ROOM 08</span></div>
+            <div class="btn" onclick="send('room9')"><span>ROOM 09</span></div>
+            <div class="btn" onclick="send('room10')"><span>ROOM 10</span></div>
+            <div class="btn btn-home" onclick="send('return')"><i class="fas fa-undo"></i> RETURN TO BASE</div>
         </div>
 
         <div class="log-wrapper">
-            <div class="log-header">
-                <span>SYSTEM LOG</span>
-                <span style="cursor:pointer; color:var(--primary);" onclick="clearLog()">CLEAR</span>
-            </div>
-            <div class="log-content" id="log-box"><div class="log-line">--- System Online ---</div></div>
+            <div class="log-header"><span>TERMINAL LOG</span><span onclick="clearLog()" style="cursor:pointer">CLR</span></div>
+            <div class="log-content" id="log-box"><div class="log-line">> System Initialized...</div></div>
         </div>
     </div>
 
     <script>
-        const MQTT_HOST = "broker.hivemq.com", MQTT_PORT = 8884;
+        // *** CONFIG ***
+        const MQTT_HOST = "broker.hivemq.com";
+        const MQTT_PORT = 8884;
         const TOPIC_CMD = "pakkapon2006/command"; 
         const TOPIC_STATUS = "pakkapon2006/status";
         
@@ -216,15 +290,16 @@
             client = new Paho.MQTT.Client(MQTT_HOST, MQTT_PORT, "web_"+Date.now()); 
             client.onMessageArrived = onMessage; 
             client.connect({ onSuccess: () => { 
-                document.getElementById("txt-net").innerText="ONLINE"; document.getElementById("txt-net").className="value on"; 
-                client.subscribe(TOPIC_STATUS); addLog("Connected to Server", "info");
+                document.getElementById("txt-net").innerText="ONLINE"; 
+                document.getElementById("txt-net").className="value online"; 
+                document.getElementById("icon-net").className="fas fa-wifi online";
+                client.subscribe(TOPIC_STATUS); addLog("Connected to Server");
             }, useSSL: true }); 
         }
         function send(c) { 
             if(client && client.isConnected()) { 
-                client.send(new Paho.MQTT.Message(JSON.stringify({cmd: c}))); 
-                addLog("Sent Command: "+c, "info"); 
-            } else { alert("OFFLINE"); } 
+                client.send(new Paho.MQTT.Message(JSON.stringify({cmd: c}))); addLog("Sent: "+c); 
+            } else { alert("SYSTEM OFFLINE"); } 
         }
 
         function onMessage(msg) {
@@ -237,52 +312,56 @@
                 // --- Logic แจ้งเตือนหลุดเส้น ---
                 if (data.status === "lost") {
                     elStat.innerText = "OFF TRACK!"; 
-                    elStat.className = "value off alert-text"; // เปลี่ยนสีตัวหนังสือ
-                    cardStatus.className = "card alert-mode";  // เปิดโหมดกระพริบแดง
-                    icBot.className = "fas fa-exclamation-triangle active-icon";
-                    addLog("CRITICAL: OFF TRACK!", "err");
+                    elStat.className = "value alert-text"; 
+                    cardStatus.className = "card alert-mode"; 
+                    icBot.className = "fas fa-exclamation-triangle alert-text";
+                    addLog("CRITICAL: OFF TRACK DETECTED");
                 } 
                 else {
-                    // สถานะปกติ
-                    cardStatus.className = "card";
+                    cardStatus.className = "card"; // คืนค่าปกติ
+                    elStat.className = "value";
                     
                     if(data.status === "delivering") { 
-                        elStat.innerText = "Target: Room " + data.room; elStat.className = "value on"; 
+                        elStat.innerText = "TARGET: ROOM " + data.room; 
                         icBot.className = "fas fa-robot active-icon";
-                        // สั่งให้การ์ตูนวิ่งไปขวา
+                        // Animation วิ่งขวา
                         document.getElementById("robot-actor").style.left = "80%";
-                        document.getElementById("robot-actor").style.transform = "scaleX(1)";
-                        document.getElementById("dest-flag").style.opacity = "1";
                     } 
                     else if(data.status === "returning") {
-                        elStat.innerText = "Returning"; elStat.className = "value on"; 
-                        // สั่งให้การ์ตูนวิ่งกลับซ้าย
+                        elStat.innerText = "RETURNING..."; 
+                        icBot.className = "fas fa-undo active-icon";
+                        // Animation วิ่งกลับซ้าย
                         document.getElementById("robot-actor").style.left = "20px";
-                        document.getElementById("robot-actor").style.transform = "scaleX(-1)";
-                        document.getElementById("dest-flag").style.opacity = "0.2";
                     }
                     else { 
-                        elStat.innerText = "Standby"; elStat.className = "value"; 
+                        elStat.innerText = "STANDBY"; 
                         icBot.className = "fas fa-check-circle";
+                        // Reset ตำแหน่ง
                         document.getElementById("robot-actor").style.left = "20px";
-                        document.getElementById("robot-actor").style.transform = "scaleX(1)";
                     }
                 }
 
-                document.getElementById("txt-cargo").innerText = data.cargo ? "LOADED" : "EMPTY";
-                document.getElementById("txt-dist").innerText = data.distance + " cm";
-                document.getElementById("cargo-actor").style.display = data.cargo ? "block" : "none";
-                if(data.distance < 30) addLog("Obstacle Detected - BRAKING", "warn");
+                // Cargo
+                const hasCargo = data.cargo;
+                document.getElementById("txt-cargo").innerText = hasCargo ? "LOADED" : "EMPTY";
+                document.getElementById("cargo-actor").style.display = hasCargo ? "block" : "none";
+                document.getElementById("icon-cargo").className = hasCargo ? "fas fa-box active-icon" : "fas fa-box-open";
+
+                // Distance
+                document.getElementById("txt-dist").innerText = data.distance + " CM";
+                
+                if(data.distance < 30) addLog("Warning: Obstacle Detected");
 
             } catch(e) {}
         }
-        function addLog(msg, type) {
-            const box = document.getElementById("log-box"), time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-            let css = type==="warn"?"t-warn":type==="err"?"t-err":"t-info";
-            box.innerHTML += `<div class="log-line"><span class="log-time">[${time}]</span><span class="${css}">${msg}</span></div>`; 
+
+        function addLog(msg) {
+            const box = document.getElementById("log-box");
+            const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            box.innerHTML += `<div class="log-line"><span class="ts">[${time}]</span>${msg}</div>`; 
             box.scrollTop = box.scrollHeight;
         }
-        function clearLog() { document.getElementById("log-box").innerHTML = '<div class="log-line">--- LOG CLEARED ---</div>'; }
+        function clearLog() { document.getElementById("log-box").innerHTML = '<div class="log-line">> Log Cleared</div>'; }
     </script>
 </body>
 </html>
