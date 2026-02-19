@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeliBot Pro (10 Rooms)</title>
+    <title>DeliBot Pro (3 Rooms)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Poppins:wght@300;600&display=swap" rel="stylesheet">
@@ -80,12 +80,14 @@
         }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 
-        /* --- Dashboard Grid --- */
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 500px; margin-bottom: 25px; }
+        /* --- Dashboard Grid (ปรับให้เหลือแค่ข้อมูลที่บอร์ดมี) --- */
+        .dashboard { display: grid; grid-template-columns: 1fr; gap: 15px; width: 100%; max-width: 500px; margin-bottom: 25px; }
+        .dashboard-top { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        
         .card {
             background: var(--glass-bg); backdrop-filter: blur(10px);
             padding: 20px; border-radius: 15px; border: var(--glass-border);
-            display: flex; flex-direction: column; align-items: center; transition: 0.3s;
+            display: flex; flex-direction: column; align-items: center; transition: 0.3s; text-align: center;
         }
         .card i { font-size: 1.5rem; margin-bottom: 10px; color: var(--text-muted); transition: 0.3s; }
         .label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
@@ -95,17 +97,17 @@
         .offline { color: var(--neon-red); text-shadow: 0 0 10px var(--neon-red); }
         .active-icon { color: var(--neon-blue) !important; text-shadow: 0 0 15px var(--neon-blue); }
 
-        /* --- Controls (10 Rooms) --- */
-        .controls { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; width: 100%; max-width: 500px; margin-bottom: 25px; }
+        /* --- Controls (3 Rooms) --- */
+        .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 500px; margin-bottom: 25px; }
         .btn {
             background: linear-gradient(145deg, #1a1b26, #13141c); border: 1px solid rgba(255,255,255,0.05);
-            padding: 15px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+            padding: 20px 10px; border-radius: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 10px;
             color: var(--text-muted); font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 1.1rem; transition: all 0.2s ease;
             box-shadow: 4px 4px 10px rgba(0,0,0,0.3), -2px -2px 5px rgba(255,255,255,0.02);
         }
         .btn:hover { color: #fff; border-color: var(--neon-blue); box-shadow: 0 0 15px rgba(0, 243, 255, 0.3); transform: translateY(-2px); }
         .btn:active { transform: scale(0.98); }
-        .btn i { font-size: 1rem; color: var(--neon-blue); }
+        .btn i { font-size: 1.5rem; color: var(--neon-blue); }
 
         /* --- Log --- */
         .log-wrapper { width: 100%; max-width: 500px; background: #000; border-radius: 15px; border: 1px solid #222; overflow: hidden; font-family: monospace; font-size: 0.8rem; }
@@ -149,25 +151,22 @@
         </div>
 
         <div class="dashboard">
-            <div class="card">
-                <i class="fas fa-wifi" id="icon-net"></i>
-                <span class="label">CONNECTION</span>
-                <span class="value offline" id="txt-net">OFFLINE</span>
-            </div>
-            <div class="card">
-                <i class="fas fa-box-open" id="icon-cargo"></i>
-                <span class="label">CARGO BAY</span>
-                <span class="value" id="txt-cargo">EMPTY</span>
+            <div class="dashboard-top">
+                <div class="card">
+                    <i class="fas fa-wifi" id="icon-net"></i>
+                    <span class="label">CONNECTION</span>
+                    <span class="value offline" id="txt-net">OFFLINE</span>
+                </div>
+                <div class="card">
+                    <i class="fas fa-box-open" id="icon-cargo"></i>
+                    <span class="label">CARGO BAY</span>
+                    <span class="value" id="txt-cargo">EMPTY</span>
+                </div>
             </div>
             <div class="card" id="card-status">
                 <i class="fas fa-microchip" id="icon-bot"></i>
                 <span class="label">SYSTEM STATUS</span>
                 <span class="value" id="txt-status">STANDBY</span>
-            </div>
-            <div class="card">
-                <i class="fas fa-satellite-dish"></i>
-                <span class="label">RADAR</span>
-                <span class="value" id="txt-dist">-- CM</span>
             </div>
         </div>
 
@@ -175,13 +174,6 @@
             <div class="btn" onclick="send('room1')"><i class="fas fa-door-closed"></i><span>ROOM 01</span></div>
             <div class="btn" onclick="send('room2')"><i class="fas fa-door-closed"></i><span>ROOM 02</span></div>
             <div class="btn" onclick="send('room3')"><i class="fas fa-door-closed"></i><span>ROOM 03</span></div>
-            <div class="btn" onclick="send('room4')"><i class="fas fa-door-closed"></i><span>ROOM 04</span></div>
-            <div class="btn" onclick="send('room5')"><i class="fas fa-door-closed"></i><span>ROOM 05</span></div>
-            <div class="btn" onclick="send('room6')"><i class="fas fa-door-closed"></i><span>ROOM 06</span></div>
-            <div class="btn" onclick="send('room7')"><i class="fas fa-door-closed"></i><span>ROOM 07</span></div>
-            <div class="btn" onclick="send('room8')"><i class="fas fa-door-closed"></i><span>ROOM 08</span></div>
-            <div class="btn" onclick="send('room9')"><i class="fas fa-door-closed"></i><span>ROOM 09</span></div>
-            <div class="btn" onclick="send('room10')"><i class="fas fa-door-closed"></i><span>ROOM 10</span></div>
         </div>
 
         <div class="log-wrapper">
@@ -191,7 +183,7 @@
     </div>
 
     <script>
-        // *** TOPIC ตรงกับบอร์ด Arduino ล่าสุดของคุณเป๊ะๆ ***
+        // *** TOPIC ตรงกับบอร์ด Arduino เป๊ะๆ ***
         const MQTT_HOST = "broker.hivemq.com";
         const MQTT_PORT = 8884;
         const TOPIC_CMD = "myrobot/command"; 
