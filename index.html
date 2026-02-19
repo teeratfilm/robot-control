@@ -1,101 +1,206 @@
-<script>
-    // --- การตั้งค่า MQTT ---
-    const MQTT_BROKER = "broker.hivemq.com";
-    const MQTT_PORT = 8000; // ข้อสำคัญ: หน้าเว็บต้องใช้ Port 8000 สำหรับ WebSockets (ESP32 ใช้ 1883)
-    const TOPIC_CMD = "myrobot/command";
-    const TOPIC_STATUS = "myrobot/status";
-    let mqttClient;
-
-    // --- ระบบ Login หน้าเว็บ (Mock-up พื้นฐาน) ---
-    function login() {
-        const user = document.getElementById('user').value;
-        const pass = document.getElementById('pass').value;
-        
-        // กำหนดให้กด INITIALIZE แล้วเข้าสู่ระบบเลย
-        if (user !== "" && pass !== "") { 
-            document.getElementById('login-modal').style.display = 'none';
-            document.getElementById('app').style.display = 'flex';
-            connectMQTT(); // ล็อกอินผ่านแล้วค่อยเชื่อมต่อ MQTT
-        } else {
-            document.getElementById('msg').innerText = "Please Enter User ID and Passcode";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeliBot Pro - pakkapon2006</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@700&family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #0b0c15;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --neon-blue: #00f3ff;
+            --neon-green: #0aff50;
+            --neon-red: #ff3131;
+            --text-main: #ffffff;
+            --shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
         }
-    }
 
-    function logout() {
-        if(mqttClient) mqttClient.disconnect();
-        document.getElementById('app').style.display = 'none';
-        document.getElementById('login-modal').style.display = 'flex';
-        document.getElementById('user').value = '';
-        document.getElementById('pass').value = '';
-    }
-
-    // --- การเชื่อมต่อ MQTT ---
-    function connectMQTT() {
-        // สร้าง Client ID แบบสุ่มเพื่อไม่ให้ชนกับใครเวลาเปิดหลายหน้าจอ
-        const clientId = "webApp_" + Math.random().toString(16).substr(2, 8);
-        mqttClient = new Paho.MQTT.Client(MQTT_BROKER, MQTT_PORT, clientId);
-
-        mqttClient.onConnectionLost = onConnectionLost;
-        mqttClient.onMessageArrived = onMessageArrived;
-
-        // เปลี่ยนสถานะหน้าจอเป็นกำลังเชื่อมต่อ
-        document.getElementById('txt-net').innerText = "CONNECTING...";
-        document.getElementById('txt-net').className = "value";
-
-        mqttClient.connect({
-            onSuccess: onConnect,
-            onFailure: function (message) {
-                console.log("Connection failed: " + message.errorMessage);
-                setTimeout(connectMQTT, 3000); // หากต่อไม่ติด ให้ลองใหม่ใน 3 วินาที
-            }
-        });
-    }
-
-    // เมื่อเชื่อมต่อ MQTT สำเร็จ
-    function onConnect() {
-        console.log("MQTT Connected!");
-        // อัปเดต UI เมื่อเชื่อมต่อสำเร็จ
-        document.getElementById('txt-net').innerText = "ONLINE";
-        document.getElementById('txt-net').className = "value online";
-        document.getElementById('icon-net').className = "fas fa-wifi active-icon";
-        
-        // Subscribe รับสถานะจากรถหุ่นยนต์
-        mqttClient.subscribe(TOPIC_STATUS);
-    }
-
-    // เมื่อการเชื่อมต่อ MQTT ขาดหาย
-    function onConnectionLost(responseObject) {
-        if (responseObject.errorCode !== 0) {
-            console.log("Connection Lost: " + responseObject.errorMessage);
+        body {
+            margin: 0; padding: 20px; font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color); color: var(--text-main);
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
         }
-        // อัปเดต UI เมื่อหลุด
-        document.getElementById('txt-net').innerText = "OFFLINE";
-        document.getElementById('txt-net').className = "value offline";
-        document.getElementById('icon-net').className = "fas fa-wifi";
-        setTimeout(connectMQTT, 3000); // พยายามเชื่อมต่อใหม่
-    }
 
-    // --- การรับข้อมูลอัปเดตจาก ESP32 ---
-    function onMessageArrived(message) {
-        try {
-            // แปลงข้อมูล JSON ที่รถส่งมา (ตัวอย่างที่ ESP32 ส่ง: {"cargo":true, "status":"delivering", "room":1})
-            const data = JSON.parse(message.payloadString);
-            
-            // 1. อัปเดตสถานะของบนรถ (Cargo)
-            if (data.cargo) {
-                document.getElementById('txt-cargo').innerText = "LOADED";
-                document.getElementById('txt-cargo').style.color = "var(--neon-green)";
-                document.getElementById('cargo-actor').style.display = "block"; // แสดงกล่องบนรถ
+        /* --- Header & Layout --- */
+        header {
+            width: 100%; max-width: 500px; display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 20px; background: var(--glass-bg);
+            padding: 15px 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .scene-container {
+            width: 100%; max-width: 500px; height: 100px; background: rgba(0,0,0,0.3);
+            border-radius: 20px; margin-bottom: 20px; position: relative; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .robot-actor {
+            position: absolute; top: 50%; left: 10%; transform: translateY(-50%);
+            font-size: 2.5rem; color: var(--neon-blue); transition: all 1s ease-in-out;
+        }
+
+        .cargo-box { position: absolute; top: -10px; right: -5px; font-size: 0.8rem; color: var(--neon-green); display: none; }
+
+        /* --- Dashboard Grid --- */
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 500px; margin-bottom: 20px; }
+        .card { background: var(--glass-bg); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
+        .value { display: block; font-size: 1.1rem; font-weight: bold; margin-top: 5px; font-family: 'Rajdhani'; }
+        .online { color: var(--neon-green); }
+        .offline { color: var(--neon-red); }
+
+        /* --- Controls --- */
+        .controls { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; max-width: 500px; }
+        .btn {
+            background: #1a1b26; border: 1px solid var(--neon-blue); padding: 15px;
+            border-radius: 10px; color: #fff; cursor: pointer; font-weight: bold;
+            transition: 0.3s; text-align: center;
+        }
+        .btn:hover { background: var(--neon-blue); color: #000; box-shadow: 0 0 15px var(--neon-blue); }
+
+        /* --- Modal --- */
+        #login-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 100; }
+        .login-box { background: #161821; padding: 30px; border-radius: 20px; text-align: center; border: 1px solid var(--neon-blue); }
+        input { width: 80%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
+    </style>
+</head>
+<body>
+
+    <div id="login-modal">
+        <div class="login-box">
+            <h2 style="color:var(--neon-blue)">SYSTEM LOGIN</h2>
+            <input type="text" id="user" placeholder="User ID">
+            <input type="password" id="pass" placeholder="Passcode">
+            <button class="btn" style="width:100%" onclick="login()">INITIALIZE</button>
+            <p id="msg" style="color:var(--neon-red)"></p>
+        </div>
+    </div>
+
+    <div id="app" style="display:none; width:100%; flex-direction:column; align-items:center;">
+        <header>
+            <h2 style="margin:0; font-family:'Rajdhani'">DELI<span style="color:var(--neon-blue)">BOT</span></h2>
+            <button onclick="logout()" style="background:none; border:1px solid var(--neon-red); color:var(--neon-red); cursor:pointer; border-radius:5px;">LOGOUT</button>
+        </header>
+
+        <div class="scene-container">
+            <div id="robot-actor" class="robot-actor">
+                <i class="fas fa-robot"></i>
+                <i id="cargo-actor" class="fas fa-box cargo-box"></i>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="card">
+                <span style="font-size:0.7rem; color:#888;">CONNECTION</span>
+                <span id="txt-net" class="value offline">OFFLINE</span>
+            </div>
+            <div class="card">
+                <span style="font-size:0.7rem; color:#888;">CARGO STATUS</span>
+                <span id="txt-cargo" class="value">EMPTY</span>
+            </div>
+            <div class="card" style="grid-column: span 2;">
+                <span style="font-size:0.7rem; color:#888;">BOT STATUS</span>
+                <span id="txt-status" class="value">IDLE (READY)</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <script>
+                for(let i=1; i<=10; i++) {
+                    document.write(`<div class="btn" onclick="sendCmd('room${i}')">GO TO ROOM ${i < 10 ? '0'+i : i}</div>`);
+                }
+            </script>
+        </div>
+    </div>
+
+    <script>
+        // *** ตั้งค่า Topic ให้ตรงกับบอร์ด ESP32 ***
+        const MQTT_HOST = "broker.hivemq.com";
+        const MQTT_PORT = 8000; 
+        const TOPIC_CMD = "pakkapon2006/command";
+        const TOPIC_STATUS = "pakkapon2006/status";
+        
+        let client;
+
+        function login() {
+            const u = document.getElementById('user').value;
+            const p = document.getElementById('pass').value;
+            if(u === "admin" && p === "1234") {
+                document.getElementById('login-modal').style.display = 'none';
+                document.getElementById('app').style.display = 'flex';
+                initMQTT();
             } else {
-                document.getElementById('txt-cargo').innerText = "EMPTY";
-                document.getElementById('txt-cargo').style.color = "var(--text-main)";
-                document.getElementById('cargo-actor').style.display = "none"; // ซ่อนกล่อง
+                document.getElementById('msg').innerText = "Invalid Credentials";
+            }
+        }
+
+        function logout() { location.reload(); }
+
+        function initMQTT() {
+            const clientId = "web_" + Math.random().toString(16).substr(2, 5);
+            client = new Paho.MQTT.Client(MQTT_HOST, MQTT_PORT, clientId);
+            
+            client.onMessageArrived = (msg) => {
+                const data = JSON.parse(msg.payloadString);
+                updateUI(data);
+            };
+
+            client.connect({
+                onSuccess: () => {
+                    document.getElementById('txt-net').innerText = "ONLINE";
+                    document.getElementById('txt-net').className = "value online";
+                    client.subscribe(TOPIC_STATUS);
+                },
+                useSSL: false // เปลี่ยนเป็น true หากใช้ Port 8884
+            });
+        }
+
+        function sendCmd(room) {
+            if(client && client.isConnected()) {
+                const message = new Paho.MQTT.Message(JSON.stringify({cmd: room}));
+                message.destinationName = TOPIC_CMD;
+                client.send(message);
+                document.getElementById('txt-status').innerText = "SENDING: " + room;
+            } else {
+                alert("MQTT Disconnected!");
+            }
+        }
+
+        function updateUI(data) {
+            // Update Cargo
+            const cargoTxt = document.getElementById('txt-cargo');
+            const cargoIcon = document.getElementById('cargo-actor');
+            if(data.cargo) {
+                cargoTxt.innerText = "LOADED";
+                cargoTxt.style.color = "var(--neon-green)";
+                cargoIcon.style.display = "block";
+            } else {
+                cargoTxt.innerText = "EMPTY";
+                cargoTxt.style.color = "#fff";
+                cargoIcon.style.display = "none";
             }
 
-            // 2. อัปเดตสถานะระบบ (System Status) และขยับรถในแอนิเมชันบนหน้าเว็บ
-            const robotActor = document.getElementById('robot-actor');
-            if (data.status === "delivering") {
-                document.getElementById('txt-status').innerText = "TO ROOM " + data.room;
-                robotActor.style.left = "80%"; // ขยับรูปรถไปทางขวา (กำลังไปส่ง)
-            } else if (data.status === "returning") {
-                document.getElementById('txt-status'
+            // Update Robot Position & Status
+            const robot = document.getElementById('robot-actor');
+            const statusTxt = document.getElementById('txt-status');
+
+            if(data.status === "delivering") {
+                statusTxt.innerText = "DELIVERING TO ROOM " + data.room;
+                statusTxt.style.color = var(--neon-blue);
+                robot.style.left = "75%";
+            } else if(data.status === "returning") {
+                statusTxt.innerText = "RETURNING HOME...";
+                statusTxt.style.color = "#ffaa00";
+                robot.style.left = "30%";
+            } else {
+                statusTxt.innerText = "IDLE (READY)";
+                statusTxt.style.color = "#fff";
+                robot.style.left = "10%";
+            }
+        }
+    </script>
+</body>
+</html>
