@@ -242,12 +242,14 @@
                     if(data.status === "delivering") { 
                         elStat.innerText = "Target: Room " + data.room; elStat.className = "value on"; 
                         icBot.className = "fas fa-robot active-icon";
+                        // Animation วิ่งขวา
                         document.getElementById("robot-actor").style.left = "80%";
                         document.getElementById("robot-actor").style.transform = "scaleX(1)";
                         document.getElementById("dest-flag").style.opacity = "1";
                     } 
                     else if(data.status === "returning") {
                         elStat.innerText = "Returning"; elStat.className = "value on"; 
+                        // Animation วิ่งกลับซ้าย
                         document.getElementById("robot-actor").style.left = "20px";
                         document.getElementById("robot-actor").style.transform = "scaleX(-1)";
                         document.getElementById("dest-flag").style.opacity = "0.2";
