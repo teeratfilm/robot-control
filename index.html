@@ -3,161 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeliBot Dark Mode</title>
+    <title>DeliBot Control</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
     
     <style>
-        /* --- Dark Theme Variables --- */
         :root {
-            --bg-dark: #0f0f13;
-            --card-bg: rgba(30, 30, 35, 0.85); /* สีดำโปร่งแสง */
-            --primary: #00d4ff; /* ฟ้าโฮโลแกรม */
-            --secondary: #bd00ff; /* ม่วงนีออน */
-            --text-main: #ffffff;
-            --text-sub: #b0b0b0;
-            --success: #00ff9d; /* เขียวนีออน */
-            --danger: #ff2a6d; /* แดงนีออน */
-            --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-            --border: 1px solid rgba(255, 255, 255, 0.1);
-            --road-color: #2c2c2c;
+            --bg-dark: #0f0f13; --card-bg: rgba(30, 30, 35, 0.85); --primary: #00d4ff; --secondary: #bd00ff; 
+            --text-main: #ffffff; --text-sub: #b0b0b0; --success: #00ff9d; --danger: #ff2a6d; 
+            --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5); --border: 1px solid rgba(255, 255, 255, 0.1);
         }
-
         body {
             margin: 0; padding: 20px; font-family: 'Poppins', sans-serif;
-            background-color: var(--bg-dark);
-            /* พื้นหลังไล่เฉดสีดำ-น้ำเงินเข้ม */
             background: linear-gradient(135deg, #0f0f13 0%, #1a1a2e 100%);
-            color: var(--text-main); min-height: 100vh; 
-            display: flex; flex-direction: column; align-items: center;
+            color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; align-items: center;
         }
-
-        /* Animation แจ้งเตือนหลุดเส้น (สีแดงกระพริบ) */
-        @keyframes pulse-red { 
-            0% { box-shadow: 0 0 0 0 rgba(255, 42, 109, 0.7); border-color: var(--danger); }
-            70% { box-shadow: 0 0 20px 10px rgba(255, 42, 109, 0); border-color: var(--danger); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 42, 109, 0); border-color: var(--danger); }
-        }
-        .alert-mode { 
-            animation: pulse-red 1s infinite; 
-            background: rgba(255, 42, 109, 0.1) !important;
-            color: var(--danger) !important;
-        }
-
-        header { 
-            width: 100%; max-width: 600px; 
-            display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 20px; 
-            background: var(--card-bg); 
-            backdrop-filter: blur(10px);
-            padding: 15px 25px; border-radius: 20px; 
-            box-shadow: var(--shadow); 
-            border: var(--border); 
-        }
-        h1 { margin: 0; font-weight: 800; font-size: 1.6rem; color: var(--text-main); letter-spacing: 1px; }
-        h1 span { color: var(--primary); }
-
-        .btn-logout { 
-            background: transparent; border: 2px solid var(--danger); 
-            color: var(--danger); padding: 8px 20px; 
-            border-radius: 50px; cursor: pointer; font-weight: 600; transition: 0.3s;
-        }
-        .btn-logout:hover { background: var(--danger); color: white; box-shadow: 0 0 15px var(--danger); }
-
-        /* Scene Animation */
-        .scene-container { 
-            width: 100%; max-width: 600px; height: 140px; 
-            background: #1e1e24; border-radius: 20px; 
-            margin-bottom: 20px; position: relative; overflow: hidden; 
-            box-shadow: var(--shadow); border: var(--border); 
-        }
-        .road { 
-            position: absolute; bottom: 0; width: 100%; height: 40px; 
-            background: var(--road-color); 
-            border-top: 2px solid #444;
-        }
-        .road::after {
-            content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 2px;
-            background: repeating-linear-gradient(90deg, #666, #666 30px, transparent 30px, transparent 60px);
-        }
-        .robot-actor { 
-            position: absolute; bottom: 15px; left: 20px; 
-            font-size: 3.5rem; color: var(--primary); 
-            transition: all 1.5s; 
-            filter: drop-shadow(0 0 10px var(--primary));
-        }
-        .cargo-actor { position: absolute; top: -15px; right: 5px; font-size: 1.3rem; color: var(--secondary); display: none; }
-        .destination-flag { 
-            position: absolute; bottom: 45px; right: 30px; 
-            font-size: 2.2rem; color: var(--success); opacity: 0.2; transition: 0.3s; 
-        }
-
-        /* Dashboard */
+        .alert-mode { animation: pulse-red 1s infinite; background: rgba(255, 42, 109, 0.1) !important; color: var(--danger) !important; }
+        @keyframes pulse-red { 0% { border-color: var(--danger); } 50% { border-color: white; } 100% { border-color: var(--danger); } }
+        header { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: var(--card-bg); padding: 15px 25px; border-radius: 20px; box-shadow: var(--shadow); border: var(--border); }
+        h1 { margin: 0; font-weight: 800; font-size: 1.6rem; } h1 span { color: var(--primary); }
+        .btn-logout { background: transparent; border: 2px solid var(--danger); color: var(--danger); padding: 8px 20px; border-radius: 50px; cursor: pointer; font-weight: 600; }
         .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 600px; margin-bottom: 20px; }
-        .card { 
-            background: var(--card-bg); padding: 20px; border-radius: 20px; 
-            box-shadow: var(--shadow); display: flex; flex-direction: column; 
-            align-items: center; border: var(--border); transition: 0.3s; 
-        }
-        .card i { font-size: 1.8rem; margin-bottom: 8px; color: var(--text-sub); }
-        .label { font-size: 0.75rem; color: var(--text-sub); text-transform: uppercase; letter-spacing: 1px; }
-        .value { font-size: 1.2rem; font-weight: 700; margin-top: 5px; color: var(--text-main); }
-        
-        .on { color: var(--success); text-shadow: 0 0 10px var(--success); }
-        .off { color: var(--danger); text-shadow: 0 0 10px var(--danger); }
-        .active-icon { color: var(--primary) !important; text-shadow: 0 0 15px var(--primary); }
-
-        /* Controls 10 Rooms */
+        .card { background: var(--card-bg); padding: 20px; border-radius: 20px; box-shadow: var(--shadow); display: flex; flex-direction: column; align-items: center; border: var(--border); }
+        .value { font-size: 1.2rem; font-weight: 700; margin-top: 5px; } .off { color: var(--danger); } .on { color: var(--success); }
         .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 600px; margin-bottom: 20px; }
-        .btn { 
-            background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1); 
-            padding: 15px 0; border-radius: 15px; cursor: pointer; 
-            display: flex; flex-direction: column; align-items: center; 
-            color: var(--text-main); font-family: 'Poppins'; font-weight: 600;
-            transition: 0.3s;
-        }
-        .btn i { margin-bottom: 5px; color: var(--primary); font-size: 1.2rem; }
-        .btn:hover { 
-            background: rgba(0, 212, 255, 0.1); 
-            border-color: var(--primary); 
-            transform: translateY(-3px); 
-            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.2);
-        }
-        .btn:active { transform: scale(0.95); }
-
-        .btn-home { 
-            grid-column: span 2; 
-            background: linear-gradient(90deg, #ff2a6d 0%, #ff5c8d 100%);
-            border: none; color: white;
-        }
-        .btn-home i { color: white; }
-        .btn-home:hover { 
-            background: linear-gradient(90deg, #ff0f5b 0%, #ff4079 100%);
-            box-shadow: 0 0 20px rgba(255, 42, 109, 0.4); 
-        }
-
-        /* Log Box */
-        .log-wrapper { width: 100%; max-width: 600px; background: var(--card-bg); border-radius: 20px; box-shadow: var(--shadow); overflow: hidden; border: var(--border); }
-        .log-header { 
-            padding: 12px 25px; background: rgba(255,255,255,0.05); 
-            border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.85rem; 
-            color: var(--text-sub); display: flex; justify-content: space-between; 
-        }
-        .log-content { height: 120px; padding: 15px; overflow-y: auto; font-size: 0.8rem; scrollbar-width: thin; }
-        .log-line { margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px dashed rgba(255,255,255,0.1); }
-        .log-time { color: var(--primary); margin-right: 10px; font-weight: 600; }
-        .t-info { color: var(--text-main); }
-        .t-warn { color: #ffd700; }
-        .t-err { color: var(--danger); font-weight: bold; }
-
-        /* Login Modal */
-        #login-modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 999; backdrop-filter: blur(5px); }
-        .login-box { text-align: center; width: 280px; background: #1e1e24; padding: 40px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 30px rgba(0,212,255,0.2); }
+        .btn { background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1); padding: 15px 0; border-radius: 15px; cursor: pointer; display: flex; flex-direction: column; align-items: center; color: var(--text-main); font-weight: 600; }
+        .btn:active { transform: scale(0.95); background: var(--primary); color: #000; }
+        .btn-home { grid-column: span 2; background: linear-gradient(90deg, #ff2a6d 0%, #ff5c8d 100%); border: none; color: white; }
+        .log-wrapper { width: 100%; max-width: 600px; background: var(--card-bg); border-radius: 20px; border: var(--border); height: 150px; overflow-y: auto; padding: 10px; font-size: 0.8rem; }
+        #login-modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 999; }
+        .login-box { text-align: center; width: 280px; background: #1e1e24; padding: 40px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.1); }
         .inp { width: 100%; padding: 12px; margin: 10px 0; background: #2c2c35; border: 1px solid #444; border-radius: 10px; text-align: center; color: white; }
-        .inp:focus { outline: none; border-color: var(--primary); }
-        .btn-login { width: 100%; padding: 12px; background: var(--primary); color: #000; border: none; font-weight: 700; border-radius: 10px; cursor: pointer; margin-top: 10px; transition: 0.3s; }
-        .btn-login:hover { box-shadow: 0 0 15px var(--primary); color: white; }
+        .btn-login { width: 100%; padding: 12px; background: var(--primary); color: #000; border: none; font-weight: 700; border-radius: 10px; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -172,60 +50,40 @@
     </div>
 
     <div id="app" style="display:none; width:100%; flex-direction:column; align-items:center;">
-        <header><h1>Deli<span>Bot</span> <i class="fas fa-microchip"></i></h1><button class="btn-logout" onclick="logout()"><i class="fas fa-power-off"></i></button></header>
+        <header><h1>Deli<span>Bot</span></h1><button class="btn-logout" onclick="logout()">LOGOUT</button></header>
         
-        <div class="scene-container">
-            <div class="destination-flag" id="dest-flag"><i class="fas fa-map-marker-alt"></i></div>
-            <div class="robot-actor" id="robot-actor"><i class="fas fa-robot"></i><i class="fas fa-box cargo-actor" id="cargo-actor"></i></div>
-            <div class="road"></div>
-        </div>
-
         <div class="dashboard">
-            <div class="card"><i class="fas fa-wifi"></i><span class="label">Status</span><span class="value off" id="txt-net">Offline</span></div>
-            <div class="card"><i class="fas fa-cubes"></i><span class="label">Cargo</span><span class="value" id="txt-cargo">Empty</span></div>
-            <div class="card" id="card-status"><i class="fas fa-cogs"></i><span class="label">Action</span><span class="value" id="txt-status">Idle</span></div>
-            <div class="card"><i class="fas fa-tachometer-alt"></i><span class="label">Distance</span><span class="value" id="txt-dist">-- cm</span></div>
+            <div class="card"><i class="fas fa-wifi"></i><span>Status</span><span class="value off" id="txt-net">Offline</span></div>
+            <div class="card" id="card-status"><i class="fas fa-robot"></i><span>Action</span><span class="value" id="txt-status">Idle</span></div>
+            <div class="card"><i class="fas fa-box"></i><span>Cargo</span><span class="value" id="txt-cargo">Empty</span></div>
+            <div class="card"><i class="fas fa-ruler"></i><span>Distance</span><span class="value" id="txt-dist">-- cm</span></div>
         </div>
         
         <div class="controls">
-            <button class="btn" onclick="send('room1')"><i class="fas fa-door-closed"></i> Room 1</button>
-            <button class="btn" onclick="send('room2')"><i class="fas fa-door-closed"></i> Room 2</button>
-            <button class="btn" onclick="send('room3')"><i class="fas fa-door-closed"></i> Room 3</button>
-            <button class="btn" onclick="send('room4')"><i class="fas fa-door-closed"></i> Room 4</button>
-            <button class="btn" onclick="send('room5')"><i class="fas fa-door-closed"></i> Room 5</button>
-            <button class="btn" onclick="send('room6')"><i class="fas fa-door-closed"></i> Room 6</button>
-            <button class="btn" onclick="send('room7')"><i class="fas fa-door-closed"></i> Room 7</button>
-            <button class="btn" onclick="send('room8')"><i class="fas fa-door-closed"></i> Room 8</button>
-            <button class="btn" onclick="send('room9')"><i class="fas fa-door-closed"></i> Room 9</button>
-            <button class="btn" onclick="send('room10')"><i class="fas fa-door-closed"></i> Room 10</button>
-            
-            <button class="btn btn-home" onclick="send('return')"><i class="fas fa-undo-alt"></i> RETURN TO BASE</button>
+            <button class="btn" onclick="send('room1')">Room 1</button> <button class="btn" onclick="send('room2')">Room 2</button>
+            <button class="btn" onclick="send('room3')">Room 3</button> <button class="btn" onclick="send('room4')">Room 4</button>
+            <button class="btn" onclick="send('room5')">Room 5</button> <button class="btn" onclick="send('room6')">Room 6</button>
+            <button class="btn" onclick="send('room7')">Room 7</button> <button class="btn" onclick="send('room8')">Room 8</button>
+            <button class="btn" onclick="send('room9')">Room 9</button> <button class="btn" onclick="send('room10')">Room 10</button>
+            <button class="btn btn-home" onclick="send('return')">RETURN BASE</button>
         </div>
 
-        <div class="log-wrapper">
-            <div class="log-header">
-                <span>SYSTEM LOG</span>
-                <span style="cursor:pointer; color:var(--primary);" onclick="clearLog()">CLEAR</span>
-            </div>
-            <div class="log-content" id="log-box"><div class="log-line">--- System Online ---</div></div>
-        </div>
+        <div class="log-wrapper" id="log-box">--- System Ready ---</div>
     </div>
 
     <script>
-        // --- เปลี่ยน Config ตรงนี้ถ้าจำเป็น ---
+        // *** แก้ชื่อ Topic ให้ตรงกับ Arduino ***
         const MQTT_HOST = "broker.hivemq.com";
         const MQTT_PORT = 8884;
-        const TOPIC_CMD = "myrobot/command";
-        const TOPIC_STATUS = "myrobot/status";
+        const TOPIC_CMD = "pakkapon2006/command"; 
+        const TOPIC_STATUS = "pakkapon2006/status";
         
         var client = null;
 
         function login() { 
             if(document.getElementById("user").value==="admin" && document.getElementById("pass").value==="1234") { 
                 localStorage.setItem("isLogged", "true"); showApp(); 
-            } else { 
-                document.getElementById("msg").innerText = "ACCESS DENIED"; 
-            } 
+            } else { document.getElementById("msg").innerText = "ACCESS DENIED"; } 
         }
         function logout() { if(client) client.disconnect(); localStorage.removeItem("isLogged"); location.reload(); }
         function showApp() { document.getElementById("login-modal").style.display = "none"; document.getElementById("app").style.display = "flex"; initMQTT(); }
@@ -235,59 +93,39 @@
             client = new Paho.MQTT.Client(MQTT_HOST, MQTT_PORT, "web_"+Date.now()); 
             client.onMessageArrived = onMessage; 
             client.connect({ onSuccess: () => { 
-                document.getElementById("txt-net").innerText="ONLINE"; 
-                document.getElementById("txt-net").className="value on"; 
-                client.subscribe(TOPIC_STATUS); 
-                addLog("Connected to Server", "info");
+                document.getElementById("txt-net").innerText="ONLINE"; document.getElementById("txt-net").className="value on"; 
+                client.subscribe(TOPIC_STATUS); addLog("Connected to Server");
             }, useSSL: true }); 
         }
         function send(c) { 
             if(client && client.isConnected()) { 
-                client.send(new Paho.MQTT.Message(JSON.stringify({cmd: c}))); 
-                addLog("Sent Command: "+c, "info"); 
+                client.send(new Paho.MQTT.Message(JSON.stringify({cmd: c}))); addLog("Sent: "+c); 
             } else { alert("OFFLINE"); } 
         }
 
         function onMessage(msg) {
             try {
                 const data = JSON.parse(msg.payloadString);
-                const cardStatus = document.getElementById("card-status"), elStat = document.getElementById("txt-status");
-                const icBot = document.getElementById("icon-bot");
+                const elStat = document.getElementById("txt-status");
+                const cardStatus = document.getElementById("card-status");
                 
                 if (data.status === "lost") {
                     elStat.innerText = "OFF TRACK!"; elStat.className = "value off";
-                    cardStatus.className = "card alert-mode"; 
-                    icBot.className = "fas fa-exclamation-triangle active-icon";
-                    addLog("CRITICAL: OFF TRACK!", "err");
+                    cardStatus.className = "card alert-mode"; addLog("ALERT: Robot Lost Line!");
                 } else {
                     cardStatus.className = "card";
-                    if(data.status === "delivering") { 
-                        elStat.innerText = "Target: Room " + data.room; elStat.className = "value on"; 
-                        icBot.className = "fas fa-robot active-icon";
-                        document.getElementById("robot-actor").style.left = "80%";
-                        document.getElementById("robot-actor").style.transform = "scaleX(1)";
-                        document.getElementById("dest-flag").style.opacity = "1";
-                    } else { 
-                        elStat.innerText = "Standby"; elStat.className = "value"; 
-                        icBot.className = "fas fa-check-circle";
-                        document.getElementById("robot-actor").style.left = "20px";
-                        document.getElementById("robot-actor").style.transform = "scaleX(-1)";
-                        document.getElementById("dest-flag").style.opacity = "0.2";
-                    }
+                    if(data.status === "delivering") { elStat.innerText = "Going Rm " + data.room; elStat.className = "value on"; }
+                    else if(data.status === "returning") { elStat.innerText = "Returning"; elStat.className = "value on"; }
+                    else { elStat.innerText = "Idle"; elStat.className = "value"; }
                 }
                 document.getElementById("txt-cargo").innerText = data.cargo ? "LOADED" : "EMPTY";
                 document.getElementById("txt-dist").innerText = data.distance + " cm";
-                document.getElementById("cargo-actor").style.display = data.cargo ? "block" : "none";
-                if(data.distance < 30) addLog("Obstacle Detected - BRAKING", "warn");
             } catch(e) {}
         }
-        function addLog(msg, type) {
-            const box = document.getElementById("log-box"), time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-            let css = type==="warn"?"t-warn":type==="err"?"t-err":"t-info";
-            box.innerHTML += `<div class="log-line"><span class="log-time">[${time}]</span><span class="${css}">${msg}</span></div>`; 
-            box.scrollTop = box.scrollHeight;
+        function addLog(msg) {
+            const box = document.getElementById("log-box");
+            box.innerHTML += `<div>> ${msg}</div>`; box.scrollTop = box.scrollHeight;
         }
-        function clearLog() { document.getElementById("log-box").innerHTML = '<div class="log-line">--- LOG CLEARED ---</div>'; }
     </script>
 </body>
 </html>
