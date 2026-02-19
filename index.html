@@ -234,7 +234,7 @@
     <script>
         // --- MQTT Config ---
         const MQTT_HOST = "broker.hivemq.com";
-        const MQTT_PORT = 8000; 
+        const MQTT_PORT = 8884; // <--- แก้ไขพอร์ตให้ตรงกับ SSL แล้ว
         const TOPIC_CMD = "pakkapon2006/command";
         const TOPIC_STATUS = "pakkapon2006/status";
         
@@ -292,6 +292,8 @@
                     client.subscribe(TOPIC_STATUS);
                 },
                 onFailure: () => {
+                    document.getElementById('txt-net').innerText = "OFFLINE";
+                    document.getElementById('txt-net').className = "card-value text-offline";
                     addLog("Connection failed. Retrying... 🔄", "var(--danger)");
                     setTimeout(initMQTT, 5000);
                 },
